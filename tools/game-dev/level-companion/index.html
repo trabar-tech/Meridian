@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian — Level Design Companion</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b0c10; color: #c5c6c7; height: 100vh; overflow: hidden; }
+  .app { display: grid; grid-template-columns: 340px 1fr; grid-template-rows: 48px 1fr; height: 100vh; gap: 0; }
+  .header { grid-column: 1 / -1; background: #1f2833; border-bottom: 1px solid #3a3f4b; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 1rem; letter-spacing: 0.08em; color: #66fcf1; }
+  .header .meta { font-size: 0.75rem; color: #888; }
+  .sidebar { background: #14151a; border-right: 1px solid #2a2f3a; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .stage { background: #0e0f14; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  canvas { background: #0f1116; box-shadow: inset 0 0 40px rgba(0,0,0,0.6); cursor: crosshair; }
+  .panel { background: #14151a; border: 1px solid #2a2f3a; border-radius: 8px; padding: 12px; }
+  .panel h3 { color: #66fcf1; font-size: 0.85rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #2a2f3a; padding-bottom: 6px; }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .col { flex-direction: column; align-items: stretch; }
+  label { font-size: 0.75rem; color: #888; margin-bottom: 4px; display: block; }
+  input[type="text"], input[type="number"], select { background: #0b0c10; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; width: 100%; }
+  input[type="text"]:focus, select:focus { outline: none; border-color: #66fcf1; }
+  button { background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+  button:hover { background: #3a3f4b; border-color: #66fcf1; color: #fff; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #3a8bf5; }
+  button.danger { background: #6b2323; border-color: #6b2323; color: #ff7f7f; }
+  button.danger:hover { background: #8a2b2b; }
+  button.secondary { background: transparent; border-color: #4a5060; color: #888; }
+  button.secondary:hover { border-color: #c5c6c7; color: #c5c6c7; }
+  button.small { padding: 4px 8px; font-size: 0.75rem; }
+  .chip { display: inline-block; background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px 4px 2px 0; cursor: default; }
+  .chip.tagged { border-color: #66fcf1; color: #66fcf1; }
+  .chip.removable { cursor: pointer; }
+  .chip.removable:hover { background: #6b2323; border-color: #6b2323; }
+  .list { max-height: 200px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10; }
+  .list-item { padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+  .list-item:last-child { border-bottom: none; }
+  .list-item.selected { background: #1f6feb22; border-color: #1f6feb; }
+  .badge { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; background: #3a3f4b; color: #888; }
+  .badge.high { background: #2d6a4f; color: #a8ffb0; }
+  .badge.med { background: #b8860b; color: #ffeaa7; }
+  .badge.low { background: #6b2323; color: #ff7f7f; }
+  .hint { font-size: 0.7rem; color: #666; margin-top: 6px; font-style: italic; }
+  .controls { display: flex; gap: 6px; flex-wrap: wrap; }
+  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3a3f4b; border-radius: 20px; transition: .2s; }
+  .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #c5c6c7; border-radius: 50%; transition: .2s; }
+  input:checked + .slider { background: #1f6feb; }
+  input:checked + .slider:before { transform: translateX(16px); }
+  .canvas-pos { position: absolute; bottom: 8px; left: 8px; font-size: 0.7rem; color: #666; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; }
+  .empty-stage { color: #666; font-size: 0.9rem; text-align: center; }
+  .room-node { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <h1>Meridian · Level Design Companion</h1>
+      <div class="meta">Context-aware room graph · tag-based item heatmaps · JSON export</div>
+    </div>
+    <div class="meta" id="stats">Rooms: 0 &nbsp;|&nbsp; Items: 0 &nbsp;|&nbsp; Placed: 0</div>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel col">
+      <h3>Rooms</h3>
+      <div class="row">
+        <input type="text" id="roomName" placeholder="e.g. Maintenance Closet">
+        <button class="primary small" onclick="app.addRoom()">Add</button>
+      </div>
+      <div class="row">
+        <label style="width: 100%;">Tags (comma-separated)</label>
+        <input type="text" id="roomTags" placeholder="maintenance, corridor, dark">
+      </div>
+      <div id="roomList" class="list"></div>
+    </div>
+
+    <div class="panel col">
+      <h3>Connections</h3>
+      <div class="row col" style="gap: 4px;">
+        <label style="width: 100%; margin-bottom: 2px;">From</label>
+        <select id="connFrom"></select>
+      </div>
+      <div class="row col" style="gap: 4px;">
+        <label style="width: 100%; margin-bottom: 2px;">To</label>
+        <select id="connTo"></select>
+      </div>
+      <button class="secondary small" onclick="app.addConnection()">Connect</button>
+      <div id="connList" class="list" style="max-height: 120px;"></div>
+    </div>
+
+    <div class="panel col">
+      <h3>Items</h3>
+      <div class="row">
+        <input type="text" id="itemName" placeholder="e.g. Wrench">
+        <button class="primary small" onclick="app.addItem()">Add</button>
+      </div>
+      <div class="row col" style="gap: 4px;">
+        <label style="width: 100%; margin-bottom: 2px;">Preferred tags</label>
+        <input type="text" id="itemTags" placeholder="maintenance, shelf">
+      </div>
+      <div class="row col" style="gap: 4px;">
+        <label style="width: 100%; margin-bottom: 2px;">Avoid tags</label>
+        <input type="text" id="itemAvoidTags" placeholder="living, bedroom">
+      </div>
+      <div id="itemList" class="list"></div>
+    </div>
+
+    <div class="panel col">
+      <h3>Placement Assistant</h3>
+      <div class="row col">
+        <label style="width: 100%; margin-bottom: 2px;">Select item to heatmap</label>
+        <select id="heatmapItem" onchange="app.draw()"></select>
+      </div>
+      <div class="row controls">
+        <label style="font-size:0.7rem;color:#888;">Show heatmap</label>
+        <div class="toggle"><input type="checkbox" id="showHeatmap" checked onchange="app.draw()"><div class="slider"></div></div>
+      </div>
+      <div class="hint">Rooms are colored by how well they fit the selected item. Click a room to place/remove the item.</div>
+      <div id="heatmapLegend" style="font-size:0.7rem;color:#888;margin-top:6px;"></div>
+    </div>
+
+    <div class="panel col" style="margin-top:auto;">
+      <h3>Export</h3>
+      <button class="primary" onclick="app.exportJSON()">Export Level JSON</button>
+      <button class="secondary" onclick="app.clearAll()">Clear All</button>
+      <div class="hint">JSON includes rooms, connections, items, and placements. Consume it in your game or proc-gen system.</div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="stage" width="1200" height="800"></canvas>
+    <div class="canvas-pos" id="pos">Click to add a room</div>
+  </div>
+</div>
+
+<script>
+/**
+ * Meridian Level Design Companion
+ *
+ * A context-aware tool for solo game devs:
+ *  - Build a room graph where rooms carry tags and connections
+ *  - Define items with preferred / avoided tags
+ *  - Heatmap shows where each item fits best (tag matching + spatial weight)
+ *  - Export JSON for your game engine or proc-gen system
+ */
+
+class App {
+  constructor() {
+    this.canvas = document.getElementById('stage');
+    this.ctx = this.canvas.getContext('2d');
+    this.rooms = [];
+    this.connections = [];
+    this.items = [];
+    this.placements = {}; // roomId -> itemId[]
+    this.selectedRoomId = null;
+    this.heatmapItemId = null;
+    this.drag = null; // {roomId, offsetX, offsetY}
+
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+    this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+    this.canvas.addEventListener('mouseup', () => this.drag = null);
+    this.canvas.addEventListener('click', (e) => this.onClick(e));
+
+    this.render();
+  }
+
+  resize() {
+    const rect = this.canvas.parentElement.getBoundingClientRect();
+    this.canvas.width = rect.width;
+    this.canvas.height = rect.height;
+    this.draw();
+  }
+
+  /* ---------- data ---------- */
+
+  addRoom() {
+    const name = document.getElementById('roomName').value.trim() || 'Room';
+    const tags = document.getElementById('roomTags').value.split(',').map(t => t.trim()).filter(Boolean);
+    const room = {
+      id: crypto.randomUUID(),
+      name,
+      tags,
+      x: this.canvas.width / 2 + (Math.random() - 0.5) * 100,
+      y: this.canvas.height / 2 + (Math.random() - 0.5) * 100,
+      radius: 60,
+    };
+    this.rooms.push(room);
+    document.getElementById('roomName').value = '';
+    document.getElementById('roomTags').value = '';
+    this.selectedRoomId = room.id;
+    this.updateLists();
+    this.draw();
+  }
+
+  removeRoom(id) {
+    this.rooms = this.rooms.filter(r => r.id !== id);
+    this.connections = this.connections.filter(c => c.from !== id && c.to !== id);
+    delete this.placements[id];
+    if (this.selectedRoomId === id) this.selectedRoomId = null;
+    this.updateLists();
+    this.draw();
+  }
+
+  addConnection() {
+    const from = document.getElementById('connFrom').value;
+    const to = document.getElementById('connTo').value;
+    if (!from || !to || from === to) return;
+    if (!this.connections.some(c => c.from === from && c.to === to)) {
+      this.connections.push({ from, to });
+    }
+    document.getElementById('connFrom').value = '';
+    document.getElementById('connTo').value = '';
+    this.updateLists();
+    this.draw();
+  }
+
+  removeConnection(i) {
+    this.connections.splice(i, 1);
+    this.updateLists();
+    this.draw();
+  }
+
+  addItem() {
+    const name = document.getElementById('itemName').value.trim() || 'Item';
+    const tags = document.getElementById('itemTags').value.split(',').map(t => t.trim()).filter(Boolean);
+    const avoid = document.getElementById('itemAvoidTags').value.split(',').map(t => t.trim()).filter(Boolean);
+    const item = {
+      id: crypto.randomUUID(),
+      name,
+      tags,
+      avoid,
+    };
+    this.items.push(item);
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemTags').value = '';
+    document.getElementById('itemAvoidTags').value = '';
+    this.updateLists();
+    this.draw();
+  }
+
+  removeItem(id) {
+    this.items = this.items.filter(i => i.id !== id);
+    Object.keys(this.placements).forEach(roomId => {
+      this.placements[roomId] = this.placements[roomId].filter(pid => pid !== id);
+    });
+    if (this.heatmapItemId === id) this.heatmapItemId = null;
+    this.updateLists();
+    this.draw();
+  }
+
+  togglePlacement(roomId, itemId) {
+    if (!this.placements[roomId]) this.placements[roomId] = [];
+    const idx = this.placements[roomId].indexOf(itemId);
+    if (idx >= 0) this.placements[roomId].splice(idx, 1);
+    else this.placements[roomId].push(itemId);
+    this.draw();
+  }
+
+  /* ---------- heatmap ---------- */
+
+  scoreRoomForItem(room, item) {
+    let score = 0;
+    // preferred tags add
+    for (const tag of item.tags) {
+      if (room.tags.includes(tag)) score += 3;
+    }
+    // avoided tags subtract heavily
+    for (const tag of item.avoid) {
+      if (room.tags.includes(tag)) score -= 5;
+    }
+    // bonus for connected rooms that already have the item (clustering)
+    const connected = this.connections.filter(c => c.from === room.id || c.to === room.id)
+      .map(c => c.from === room.id ? c.to : c.from);
+    for (const cid of connected) {
+      const placed = this.placements[cid] || [];
+      if (placed.includes(itemId)) score += 1;
+    }
+    return score;
+  }
+
+  getHeatmapColor(score) {
+    // negative -> red, 0 -> grey, positive -> green
+    if (score <= 0) {
+      const t = Math.min(1, Math.abs(score) / 6);
+      return `rgba(107, 35, 35, ${0.25 + t * 0.45})`;
+    } else {
+      const t = Math.min(1, score / 9);
+      return `rgba(45, 106, 79, ${0.25 + t * 0.55})`;
+    }
+  }
+
+  /* ---------- input ---------- */
+
+  onMouseDown(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    // check room hit
+    for (let i = this.rooms.length - 1; i >= 0; i--) {
+      const r = this.rooms[i];
+      const dx = x - r.x, dy = y - r.y;
+      if (dx * dx + dy * dy <= r.radius * r.radius) {
+        this.drag = { roomId: r.id, offsetX: x - r.x, offsetY: y - r.y };
+        this.selectedRoomId = r.id;
+        this.updateLists();
+        this.draw();
+        return;
+      }
+    }
+    this.drag = null;
+  }
+
+  onMouseMove(e) {
+    if (!this.drag) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const r = this.rooms.find(r => r.id === this.drag.roomId);
+    if (r) {
+      r.x = x - this.drag.offsetX;
+      r.y = y - this.drag.offsetY;
+      this.draw();
+    }
+    document.getElementById('pos').textContent = `x: ${Math.round(x)}, y: ${Math.round(y)}`;
+  }
+
+  onClick(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    // if not dragging a room, check placement click
+    if (this.drag) return;
+    if (this.heatmapItemId) {
+      for (let i = this.rooms.length - 1; i >= 0; i--) {
+        const r = this.rooms[i];
+        const dx = x - r.x, dy = y - r.y;
+        if (dx * dx + dy * dy <= r.radius * r.radius) {
+          this.togglePlacement(r.id, this.heatmapItemId);
+          return;
+        }
+      }
+    }
+  }
+
+  /* ---------- rendering ---------- */
+
+  draw() {
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // draw connections first (under rooms)
+    for (const c of this.connections) {
+      const a = this.rooms.find(r => r.id === c.from);
+      const b = this.rooms.find(r => r.id === c.to);
+      if (!a || !b) continue;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = '#3a3f4b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // draw heatmap overlay
+    if (document.getElementById('showHeatmap').checked && this.heatmapItemId) {
+      const item = this.items.find(i => i.id === this.heatmapItemId);
+      if (item) {
+        for (const r of this.rooms) {
+          const score = this.scoreRoomForItem(r, item);
+          ctx.fillStyle = this.getHeatmapColor(score);
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, r.radius + 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // draw rooms
+    for (const r of this.rooms) {
+      const isSelected = this.selectedRoomId === r.id;
+      const hasHeat = this.heatmapItemId
+        ? ((this.placements[r.id] || []).includes(this.heatmapItemId))
+        : false;
+
+      // outer glow if selected or heat-placed
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.radius + (isSelected ? 8 : 0), 0, Math.PI * 2);
+      ctx.fillStyle = isSelected ? '#66fcf122' : '#1a1c22';
+      ctx.fill();
+      ctx.strokeStyle = isSelected ? '#66fcf1' : (hasHeat ? '#4ade8044' : '#3a3f4b');
+      ctx.lineWidth = isSelected ? 3 : 2;
+      ctx.stroke();
+
+      // room fill
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#14151a';
+      ctx.fill();
+      ctx.strokeStyle = '#3a3f4b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // tags as small chips under name
+      ctx.fillStyle = '#c5c6c7';
+      ctx.font = '600 12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(r.name, r.x, r.y - 6);
+      ctx.font = '10px system-ui';
+      ctx.fillStyle = '#888';
+      if (r.tags.length) {
+        ctx.fillText('[' + r.tags.join(', ') + ']', r.x, r.y + 10);
+      }
+      if (hasHeat) {
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('●', r.x, r.y - r.radius - 10);
+      }
+    }
+
+    // draw placement dots
+    for (const [roomId, itemIds] of Object.entries(this.placements)) {
+      const r = this.rooms.find(room => room.id === roomId);
+      if (!r) continue;
+      let angle = 0;
+      const step = (Math.PI * 2) / Math.max(1, itemIds.length);
+      for (const itemId of itemIds) {
+        const item = this.items.find(i => i.id === itemId);
+        const px = r.x + Math.cos(angle) * (r.radius - 22);
+        const py = r.y + Math.sin(angle) * (r.radius - 22);
+        ctx.fillStyle = item ? '#f093fb' : '#888';
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        angle += step;
+      }
+    }
+
+    // empty state
+    if (this.rooms.length === 0) {
+      ctx.fillStyle = '#666';
+      ctx.font = '14px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('No rooms yet. Add a room from the sidebar, then click the canvas to place it.', this.canvas.width / 2, this.canvas.height / 2);
+    }
+  }
+
+  /* ---------- UI lists ---------- */
+
+  updateLists() {
+    this.renderRoomList();
+    this.renderConnectionSelects();
+    this.renderConnList();
+    this.renderItemList();
+    this.renderHeatmapSelect();
+    this.updateStats();
+  }
+
+  renderRoomList() {
+    const el = document.getElementById('roomList');
+    el.innerHTML = '';
+    for (const r of this.rooms) {
+      const div = document.createElement('div');
+      div.className = 'list-item' + (this.selectedRoomId === r.id ? ' selected' : '');
+      div.innerHTML = `
+        <span style="flex:1;">${r.name}</span>
+        <div>
+          ${r.tags.map(t => `<span class="chip">${t}</span>`).join('')}
+          <button class="chip removable small" onclick="app.removeRoom('${r.id}')" title="Delete" style="padding:0 4px;">×</button>
+        </div>
+      `;
+      div.onclick = () => { this.selectedRoomId = r.id; this.updateLists(); this.draw(); };
+      el.appendChild(div);
+    }
+  }
+
+  renderConnectionSelects() {
+    const from = document.getElementById('connFrom');
+    const to = document.getElementById('connTo');
+    const fv = from.value, tv = to.value;
+    from.innerHTML = '<option value="">—</option>';
+    to.innerHTML = '<option value="">—</option>';
+    for (const r of this.rooms) {
+      from.add(new Option(r.name, r.id));
+      to.add(new Option(r.name, r.id));
+    }
+    if (fv) from.value = fv;
+    if (tv) to.value = tv;
+  }
+
+  renderConnList() {
+    const el = document.getElementById('connList');
+    el.innerHTML = '';
+    for (let i = 0; i < this.connections.length; i++) {
+      const c = this.connections[i];
+      const a = this.rooms.find(r => r.id === c.from);
+      const b = this.rooms.find(r => r.id === c.to);
+      if (!a || !b) continue;
+      const div = document.createElement('div');
+      div.className = 'list-item';
+      div.innerHTML = `<span>${a.name} → ${b.name}</span><button class="chip removable small" onclick="app.removeConnection(${i})" style="padding:0 4px;">×</button>`;
+      el.appendChild(div);
+    }
+  }
+
+  renderItemList() {
+    const el = document.getElementById('itemList');
+    el.innerHTML = '';
+    for (const item of this.items) {
+      const div = document.createElement('div');
+      div.className = 'list-item';
+      div.innerHTML = `
+        <span style="flex:1;">${item.name}</span>
+        <div>
+          ${item.tags.map(t => `<span class="chip tagged">${t}</span>`).join('')}
+          ${item.avoid.map(t => `<span class="chip" style="border-color:#6b2323;color:#ff7f7f;">✖${t}</span>`).join('')}
+          <button class="chip removable small" onclick="app.removeItem('${item.id}')" title="Delete" style="padding:0 4px;">×</button>
+        </div>
+      `;
+      el.appendChild(div);
+    }
+  }
+
+  renderHeatmapSelect() {
+    const el = document.getElementById('heatmapItem');
+    const v = el.value;
+    el.innerHTML = '<option value="">— select an item —</option>';
+    for (const item of this.items) {
+      el.add(new Option(item.name, item.id));
+    }
+    if (v && this.items.find(i => i.id === v)) el.value = v;
+    else { el.value = ''; this.heatmapItemId = null; }
+    this.heatmapItemId = el.value || null;
+    const legend = document.getElementById('heatmapLegend');
+    if (this.heatmapItemId) {
+      const item = this.items.find(i => i.id === this.heatmapItemId);
+      legend.innerHTML = `<b>${item.name}</b> — likes: ${item.tags.join(', ') || 'none'} | avoids: ${item.avoid.join(', ') || 'none'}`;
+    } else {
+      legend.innerHTML = '';
+    }
+    this.draw();
+  }
+
+  updateStats() {
+    const placed = Object.values(this.placements).flat().length;
+    document.getElementById('stats').textContent =
+      `Rooms: ${this.rooms.length} &nbsp;|&nbsp; Items: ${this.items.length} &nbsp;|&nbsp; Placed: ${placed}`;
+  }
+
+  clearAll() {
+    if (!confirm('Clear all rooms, items, and placements?')) return;
+    this.rooms = [];
+    this.connections = [];
+    this.items = [];
+    this.placements = {};
+    this.selectedRoomId = null;
+    this.heatmapItemId = null;
+    this.updateLists();
+    this.draw();
+  }
+
+  exportJSON() {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      rooms: this.rooms,
+      connections: this.connections,
+      items: this.items,
+      placements: this.placements,
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meridian-level-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+const app = new App();
+</script>
+</body>
+</html>

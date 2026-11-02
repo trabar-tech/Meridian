@@ -85,16 +85,22 @@ Meridian/
 │   └── store.js       # JSON persistence layer
 ├── commands/
 │   ├── add.js
+│   ├── edit.js
 │   ├── list.js
 │   ├── read.js
 │   ├── remove.js
 │   └── search.js
 ├── tests/
+│   ├── commands.test.js
 │   └── store.test.js
 ├── docs/
 │   ├── contributing.md
 │   └── architecture.md
-├── .github/workflows/ci.yml
+├── tools/
+│   └── game-dev/
+│       └── level-companion/
+│           ├── index.html   # context-aware level design tool
+│           └── README.md
 └── .gitignore
 ```
 
@@ -114,6 +120,10 @@ npm run lint
 ## Contributing
 
 See [docs/contributing.md](./docs/contributing.md) for how to contribute.
+
+## Related: Game Dev Tools
+
+Under `tools/game-dev/` you'll find the **Level Design Companion** — a single-file, browser-based tool for context-aware level design (room graphs, tag-based item heatmaps, JSON export). See `tools/game-dev/level-companion/README.md` for details.
 
 ## License
 
