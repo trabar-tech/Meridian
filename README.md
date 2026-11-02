@@ -7,6 +7,7 @@ A personal CLI knowledge & note manager. Capture, organize, and retrieve your no
 ## Features
 
 - **Add** notes with optional comma-separated tags
+- **Edit** a note's body and/or tags by id
 - **List** all notes, or filter by tag
 - **Read** a single note by id (with creation/update timestamps)
 - **Remove** notes by id
@@ -40,6 +41,7 @@ npm link
 
 ```
 meridian add <note>        [-t,--tags <tags>]   Add a new note
+meridian edit <id>         [<note>] [-t,--tags <tags>]  Edit a note's body and/or tags
 meridian list              [-t,--tag <tag>]      List all notes
 meridian read <id>                                   Read a note by its id
 meridian remove <id>                                 Remove a note by its id
@@ -53,6 +55,8 @@ meridian --help                                        Show help
 ```bash
 meridian add "Buy groceries" -t "shopping,home"
 meridian add "Draft the project proposal" -t "work,writing"
+meridian edit 1 "Buy groceries and milk"
+meridian edit 1 -t "shopping,home,urgent"
 meridian list
 meridian list -t work
 meridian read 1

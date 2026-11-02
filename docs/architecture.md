@@ -6,9 +6,9 @@ Meridian is intentionally small and dependency-free.
 
 1. **CLI entry (`src/index.js`)** — parses `process.argv`, dispatches to the
    matching command handler, and prints help/version.
-2. **Commands (`commands/`)** — one file per verb (`add`, `list`, `read`,
-   `remove`, `search`). Each exports an `async (args) => void` function that
-   performs its action and prints to stdout/stderr.
+2. **Commands (`commands/`)** — one file per verb (`add`, `edit`, `list`,
+   `read`, `remove`, `search`). Each exports an `async (args) => void`
+   function that performs its action and prints to stdout/stderr.
 3. **Store (`src/store.js`)** — a tiny JSON persistence layer that reads and
    writes `~/.meridian/notes.json`, assigns monotonic ids, and ensures the data
    directory exists.
