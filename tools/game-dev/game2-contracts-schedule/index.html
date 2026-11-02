@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian · Contract & Animatronic Schedule (Game 2)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b0c10; color: #c5c6c7; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  header { background: #1f2833; border-bottom: 1px solid #3a3f4b; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 0.9rem; letter-spacing: 0.08em; color: #66fcf1; text-transform: uppercase; }
+  header .subtitle { font-size: 0.7rem; color: #888; }
+  main { flex: 1; display: flex; overflow: hidden; }
+  .panel { padding: 16px; overflow-y: auto; border-right: 1px solid #2a2f3a; display: flex; flex-direction: column; gap: 12px; }
+  .panel:first-child { flex: 0 0 420px; }
+  .panel:last-child { flex: 1; }
+  .panel h3 { color: #66fcf1; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #2a2f3a; padding-bottom: 6px; margin-bottom: 8px; }
+  label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select, textarea { background: #0b0c10; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #66fcf1; }
+  textarea { resize: vertical; min-height: 60px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  button { background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 7px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+  button:hover { background: #3a3f4b; border-color: #66fcf1; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #3a8bf5; }
+  button.secondary { background: transparent; color: #888; border-color: #4a5060; }
+  button.secondary:hover { color: #c5c6c7; border-color: #c5c6c7; }
+  button.danger { background: #6b2323; border-color: #6b2323; color: #ff7f7f; }
+  button.danger:hover { background: #8a2b2b; }
+  button.small { padding: 4px 8px; font-size: 0.75rem; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .col { flex-direction: column; align-items: stretch; }
+  .chip { display: inline-block; background: #1f2833; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px 4px 2px 0; }
+  .card { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card-name { font-weight: 600; color: #66fcf1; }
+  .card-meta { font-size: 0.7rem; color: #888; }
+  .result { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .status { font-weight: 700; font-size: 0.85rem; }
+  .status.ok { color: #a8ffb0; }
+  ul { list-style: none; }
+  li { padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.8rem; display: flex; gap: 8px; align-items: flex-start; }
+  li:last-child { border-bottom: none; }
+  .sev { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; min-width: 26px; text-align: center; }
+  .hint { font-size: 0.7rem; color: #666; font-style: italic; margin-top: 4px; }
+  .empty { color: #666; font-size: 0.85rem; text-align: center; padding-top: 30px; }
+  .btn-group { display: flex; gap: 6px; }
+  .schedule-row { display: flex; gap: 6px; align-items: center; background: #14151a; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Contract & Animatronic Schedule</h1>
+    <div class="subtitle">Game 2 — repair/observe contracts, 5-night observation, animatronic behavior schedules</div>
+  </div>
+  <div style="margin-left:auto; font-size:0.7rem;color:#888;">Web-only · solo dev · conceptual phase</div>
+</header>
+
+<main>
+  <div class="panel">
+    <h3>1 · Contracts</h3>
+    <div class="row col">
+      <label>Contract name</label>
+      <input type="text" id="cName" placeholder="e.g. Fix the ventilator">
+    </div>
+    <div class="row col">
+      <label>Type</label>
+      <select id="cType">
+        <option value="repair">Repair</option>
+        <option value="observe">Observe / note behavior</option>
+        <option value="survive">Survive duration</option>
+        <option value="escape">Escape location</option>
+      </select>
+    </div>
+    <div class="row col">
+      <label>Location</label>
+      <input type="text" id="cLoc" placeholder="e.g. maintenance, backrooms">
+    </div>
+    <div class="row col">
+      <label>Duration (minutes, 0 = open)</label>
+      <input type="number" id="cDur" value="0" min="0">
+    </div>
+    <div class="row col">
+      <label>Payout</label>
+      <input type="text" id="cPay" placeholder="e.g. 500 credits">
+    </div>
+    <div class="row col">
+      <label>Failure state</label>
+      <input type="text" id="cFail" placeholder="e.g. animatronic enters room">
+    </div>
+    <button class="primary small" onclick="app.addContract()">Add contract</button>
+    <div id="contractList" style="max-height: 220px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+  </div>
+
+  <div class="panel">
+    <h3>2 · Animatronic schedule</h3>
+    <div class="row col">
+      <label>Animatronic name</label>
+      <input type="text" id="aName" placeholder="e.g. Freddy, Bonnie">
+    </div>
+    <div class="row col">
+      <label>Behavior</label>
+      <select id="aBehavior">
+        <option value="patrol">Patrol</option>
+        <option value="stationary">Stationary</option>
+        <option value="haunt">Haunt / jumpscare</option>
+        <option value="roam">Roam freely</option>
+      </select>
+    </div>
+    <div class="row col">
+      <label>Start time (hour 0-23)</label>
+      <input type="number" id="aStart" value="0" min="0" max="23">
+    </div>
+    <div class="row col">
+      <label>End time (hour 0-23)</label>
+      <input type="number" id="aEnd" value="6" min="0" max="23">
+    </div>
+    <div class="row col">
+      <label>Location</label>
+      <input type="text" id="aLoc" placeholder="e.g. pizzaria, backrooms">
+    </div>
+    <div class="row col">
+      <label>Camera coverage</label>
+      <select id="aCamera">
+        <option value="frontroom">Frontroom (pizzaria view)</option>
+        <option value="backroom">Backroom (surveillance/parts)</option>
+        <option value="both">Both</option>
+        <option value="none">None (blind spot)</option>
+      </select>
+    </div>
+    <button class="primary small" onclick="app.addAnimatronic()">Add to schedule</button>
+    <div id="scheduleList" style="max-height: 220px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+  </div>
+
+  <div class="panel" style="margin-top:auto;">
+    <h3>3 · Validation & export</h3>
+    <div id="scheduleResult" class="result" style="display:none;">
+      <div class="result-header">
+        <span id="scheduleStatus" class="status">—</span>
+        <span id="scheduleCount" style="font-size:0.7rem;color:#888;">— issues</span>
+      </div>
+      <ul id="scheduleIssues"></ul>
+    </div>
+    <div id="scheduleEmpty" class="empty">Add contracts and schedule entries, then validate.</div>
+    <div class="row btn-group" style="margin-top:10px;">
+      <button class="primary" onclick="app.validate()">Validate all</button>
+      <button class="secondary" onclick="app.exportJSON()">Export JSON</button>
+      <button class="danger" onclick="app.clearAll()">Clear all</button>
+    </div>
+    <div class="hint">Checks: contracts reference valid locations, schedule hours are sane, animatronics have camera coverage assigned.</div>
+  </div>
+</main>
+
+<script>
+/**
+ * Meridian Contract & Animatronic Schedule
+ *
+ * Game 2 design tool. You described:
+ *   Contracts — repair jobs, 5-night observation gigs, failure states
+ *   Animatronics — behavior schedules, camera coverage (frontroom vs backroom)
+ *
+ * Use this to design the gig system and animatronic movement before writing game code.
+ */
+
+class App {
+  constructor() {
+    this.contracts = [];
+    this.schedule = [];
+
+    this.cName = document.getElementById('cName');
+    this.cType = document.getElementById('cType');
+    this.cLoc = document.getElementById('cLoc');
+    this.cDur = document.getElementById('cDur');
+    this.cPay = document.getElementById('cPay');
+    this.cFail = document.getElementById('cFail');
+    this.contractList = document.getElementById('contractList');
+
+    this.aName = document.getElementById('aName');
+    this.aBehavior = document.getElementById('aBehavior');
+    this.aStart = document.getElementById('aStart');
+    this.aEnd = document.getElementById('aEnd');
+    this.aLoc = document.getElementById('aLoc');
+    this.aCamera = document.getElementById('aCamera');
+    this.scheduleList = document.getElementById('scheduleList');
+
+    this.scheduleResult = document.getElementById('scheduleResult');
+    this.scheduleEmpty = document.getElementById('scheduleEmpty');
+    this.scheduleStatus = document.getElementById('scheduleStatus');
+    this.scheduleCount = document.getElementById('scheduleCount');
+    this.scheduleIssues = document.getElementById('scheduleIssues');
+  }
+
+  addContract() {
+    const name = this.cName.value.trim();
+    const loc = this.cLoc.value.trim();
+    if (!name || !loc) {
+      alert('Please enter name and location');
+      return;
+    }
+    this.contracts.push({
+      id: crypto.randomUUID(),
+      name,
+      type: this.cType.value,
+      location: loc,
+      duration: Number(this.cDur.value) || 0,
+      payout: this.cPay.value.trim() || '(unspecified)',
+      failure: this.cFail.value.trim() || '(none)',
+    });
+    this.cName.value = '';
+    this.cLoc.value = '';
+    this.cDur.value = '0';
+    this.cPay.value = '';
+    this.cFail.value = '';
+    this.renderContracts();
+  }
+
+  removeContract(id) {
+    this.contracts = this.contracts.filter(c => c.id !== id);
+    this.renderContracts();
+  }
+
+  renderContracts() {
+    this.contractList.innerHTML = '';
+    for (const c of this.contracts) {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.style.padding = '8px';
+      div.innerHTML = `
+        <div class="card-header">
+          <div class="card-name">${c.name}</div>
+          <div class="card-meta">${c.type} · ${c.duration || '∞'} min</div>
+        </div>
+        <div style="font-size:0.75rem;">Location: ${c.location}</div>
+        <div style="font-size:0.7rem;color:#888;">Payout: ${c.payout} · Failure: ${c.failure}</div>
+        <button class="chip removable small" onclick="app.removeContract('${c.id}')" style="padding:0 6px;">×</button>
+      `;
+      this.contractList.appendChild(div);
+    }
+  }
+
+  addAnimatronic() {
+    const name = this.aName.value.trim();
+    const loc = this.aLoc.value.trim();
+    if (!name || !loc) {
+      alert('Please enter name and location');
+      return;
+    }
+    const start = Number(this.aStart.value) || 0;
+    const end = Number(this.aEnd.value) || 6;
+    this.schedule.push({
+      id: crypto.randomUUID(),
+      name,
+      behavior: this.aBehavior.value,
+      start,
+      end,
+      location: loc,
+      camera: this.aCamera.value,
+    });
+    this.aName.value = '';
+    this.aLoc.value = '';
+    this.aStart.value = '0';
+    this.aEnd.value = '6';
+    this.renderSchedule();
+  }
+
+  removeAnimatronic(id) {
+    this.schedule = this.schedule.filter(a => a.id !== id);
+    this.renderSchedule();
+  }
+
+  renderSchedule() {
+    this.scheduleList.innerHTML = '';
+    for (const a of this.schedule) {
+      const div = document.createElement('div');
+      div.className = 'schedule-row';
+      div.innerHTML = `
+        <div style="flex:1;">
+          <div style="font-weight:600;">${a.name}</div>
+          <div style="font-size:0.7rem;color:#888;">${a.behavior} · ${a.start}:00–${a.end}:00 · ${a.location} · ${a.camera}</div>
+        </div>
+        <button class="chip removable small" onclick="app.removeAnimatronic('${a.id}')" style="padding:0 6px;">×</button>
+      `;
+      this.scheduleList.appendChild(div);
+    }
+  }
+
+  validate() {
+    const issues = [];
+    const validHours = (h) => h >= 0 && h <= 23;
+
+    for (const c of this.contracts) {
+      if (!c.location) {
+        issues.push({ sev: 'error', message: `Contract "${c.name}" has no location` });
+      }
+      if (c.failure === '(none)') {
+        issues.push({ sev: 'warn', message: `Contract "${c.name}" has no failure state` });
+      }
+    }
+    for (const a of this.schedule) {
+      if (!validHours(a.start) || !validHours(a.end)) {
+        issues.push({ sev: 'error', message: `Animatronic "${a.name}" has invalid hours` });
+      }
+      if (a.start >= a.end && a.end !== 0) {
+        issues.push({ sev: 'warn', message: `Animatronic "${a.name}" start >= end (overnight?)` });
+      }
+      if (a.camera === 'none') {
+        issues.push({ sev: 'info', message: `Animatronic "${a.name}" has no camera coverage (blind spot)` });
+      }
+    }
+
+    const ok = issues.length === 0;
+    this.scheduleEmpty.style.display = 'none';
+    this.scheduleResult.style.display = 'block';
+    this.scheduleStatus.textContent = ok ? 'PASS — all valid' : 'FAIL — issues found';
+    this.scheduleStatus.className = 'status ' + (ok ? 'ok' : 'bad');
+    this.scheduleCount.textContent = issues.length + ' issue' + (issues.length === 1 ? '' : 's');
+    this.scheduleIssues.innerHTML = '';
+    if (issues.length === 0) {
+      this.scheduleIssues.innerHTML = '<li style="color:#888;font-style:italic;">Everything checks out.</li>';
+      return;
+    }
+    for (const i of issues) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="sev ${i.sev === 'error' ? 'error' : i.sev === 'warn' ? 'warn' : 'info'}">${i.sev.toUpperCase()}</span><div style="flex:1;">${i.message}</div>`;
+      this.scheduleIssues.appendChild(li);
+    }
+  }
+
+  exportJSON() {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      contracts: this.contracts,
+      schedule: this.schedule,
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meridian-contracts-schedule-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  clearAll() {
+    if (!confirm('Clear all contracts and schedule entries?')) return;
+    this.contracts = [];
+    this.schedule = [];
+    this.renderContracts();
+    this.renderSchedule();
+    this.scheduleResult.style.display = 'none';
+    this.scheduleEmpty.style.display = 'block';
+  }
+}
+
+const app = new App();
+</script>
+</body>
+</html>

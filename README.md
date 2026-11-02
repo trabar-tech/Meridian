@@ -108,8 +108,14 @@ Meridian/
 │       │   └── index.html   # validates map/NPC JSON for dangling context refs
 │       ├── dialogue-builder/
 │       │   └── index.html   # NPC quick-chat lines with [VARIABLE] injection
-│       └── contract-tool/
-│           └── index.html   # mission contracts validated against map locations
+│       ├── game1-npc-intent/
+│       │   └── index.html   # faction/being public layer vs hidden agenda + impostor subtype
+│       ├── contract-tool/
+│       │   └── index.html   # mission contracts validated against map locations
+│       ├── game2-vision-layers/
+│       │   └── index.html   # normal vs terror vision HUD/world-object layers
+│       └── game2-contracts-schedule/
+│           └── index.html   # repair/observe contracts + animatronic behavior schedule
 └── .gitignore
 ```
 
@@ -132,15 +138,18 @@ See [docs/contributing.md](./docs/contributing.md) for how to contribute.
 
 ## Related: Game Dev Tools
 
-Under `tools/game-dev/` you'll find a set of single-file, browser-based tools for solo game development. All run offline with zero build step — just open `index.html` in a browser:
+Under `tools/game-dev/` you'll find single-file, browser-based tools **for you** (the solo dev doing everything yourself, web-only, no engine access). Both games are still in conceptualization — these are design sketchpads, not player-facing features. All run offline with zero build step — just open `index.html` in a browser:
 
 - **Level Design Companion** (`level-companion/`) — room graph with tags, item heatmaps, JSON export. Build context-aware layouts instead of hard-coding every wall.
-- **Map Layer & Testimony Simulator** (`map-layer-simulator/`) — draw map layers (medbay, security, ...) and simulate `[LOCATION]` testimony from coordinates: "I saw PURPLE at MEDBAY." Tool for you to design and test the coordinate→layer lookup before writing game code.
+- **Map Layer & Testimony Simulator** (`map-layer-simulator/`) — draw map layers as rectangles, place sightings (entity + time + coordinates), and watch the system resolve bracketed testimony: `I saw PURPLE at MEDBAY` or `UNKNOWN LOCATION`. This is the [LOCATION] mechanic for Game 1, tested before you write game code.
 - **Context Validator** (`context-validator/`) — paste your map/NPC/item JSON; checks that every `[LOCATION]` bracket matches a real room tag, every NPC references an existing room, and factions/beings/agendas come from allowed lists.
 - **Dialogue Builder** (`dialogue-builder/`) — build NPC quick-chat lines with injected variables (`[LOCATION]`, `[FACTION]`, `[ITEM]`, etc.) and validate that every bracket has a data source before it breaks in-game.
+- **NPC Intent Tracker** (`game1-npc-intent/`) — Game 1's double layer: public layer (faction + being) vs hidden layer (agenda + impostor subtype: bandit / merc / alien organism). Track suspicion, accusations, and claimed locations per NPC.
 - **Contract Tool** (`contract-tool/`) — design missions/contracts and validate that every contract targets a real location with sane parameters.
+- **Vision Mode Layer Manager** (`game2-vision-layers/`) — Game 2's two vision modes: normal (versatile HUD) vs terror (survival/hiding info). Define which HUD elements and world props appear in each, preview side by side, export JSON.
+- **Contract & Animatronic Schedule** (`game2-contracts-schedule/`) — Game 2's gig system: repair/observe/survive contracts plus animatronic behavior schedules (patrol/stationary/haunt/roam), camera coverage (frontroom/backroom/both/none), and time windows.
 
-See each tool's folder for details, or open `level-companion/README.md` for the fullest write-up.
+See each tool's folder for details, or open `level-companion/README.md` / `map-layer-simulator/README.md` for the fullest write-ups.
 
 ## License
 

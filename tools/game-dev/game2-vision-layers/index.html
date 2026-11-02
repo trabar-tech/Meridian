@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian · Vision Mode Layer Manager (Game 2)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b0c10; color: #c5c6c7; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  header { background: #1f2833; border-bottom: 1px solid #3a3f4b; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 0.9rem; letter-spacing: 0.08em; color: #66fcf1; text-transform: uppercase; }
+  header .subtitle { font-size: 0.7rem; color: #888; }
+  main { flex: 1; display: flex; overflow: hidden; }
+  .panel { padding: 16px; overflow-y: auto; border-right: 1px solid #2a2f3a; display: flex; flex-direction: column; gap: 12px; }
+  .panel:first-child { flex: 0 0 420px; }
+  .panel:last-child { flex: 1; }
+  .panel h3 { color: #66fcf1; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #2a2f3a; padding-bottom: 6px; margin-bottom: 8px; }
+  label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select, textarea, input[type="color"] { background: #0b0c10; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #66fcf1; }
+  textarea { resize: vertical; min-height: 60px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  input[type="color"] { padding: 2px; height: 28px; border: none; cursor: pointer; }
+  button { background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 7px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+  button:hover { background: #3a3f4b; border-color: #66fcf1; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #3a8bf5; }
+  button.secondary { background: transparent; color: #888; border-color: #4a5060; }
+  button.secondary:hover { color: #c5c6c7; border-color: #c5c6c7; }
+  button.danger { background: #6b2323; border-color: #6b2323; color: #ff7f7f; }
+  button.danger:hover { background: #8a2b2b; }
+  button.small { padding: 4px 8px; font-size: 0.75rem; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .col { flex-direction: column; align-items: stretch; }
+  .chip { display: inline-block; background: #1f2833; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px 4px 2px 0; }
+  .chip.normal { border-color: #66fcf1; color: #66fcf1; }
+  .chip.terror { border-color: #f093fb; color: #f093fb; }
+  .card { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card-name { font-weight: 600; color: #66fcf1; }
+  .card-meta { font-size: 0.7rem; color: #888; }
+  .result { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .status { font-weight: 700; font-size: 0.85rem; }
+  .status.ok { color: #a8ffb0; }
+  ul { list-style: none; }
+  li { padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.8rem; display: flex; gap: 8px; align-items: flex-start; }
+  li:last-child { border-bottom: none; }
+  .sev { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; min-width: 26px; text-align: center; }
+  .hint { font-size: 0.7rem; color: #666; font-style: italic; margin-top: 4px; }
+  .empty { color: #666; font-size: 0.85rem; text-align: center; padding-top: 30px; }
+  .btn-group { display: flex; gap: 6px; }
+  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3a3f4b; border-radius: 20px; transition: .2s; }
+  .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #c5c6c7; border-radius: 50%; transition: .2s; }
+  input:checked + .slider { background: #1f6feb; }
+  input:checked + .slider:before { transform: translateX(16px); }
+  #preview { width: 100%; height: 320px; background: #0a0b10; border: 1px solid #2a2f3a; border-radius: 6px; position: relative; overflow: hidden; margin-top: 8px; }
+  .preview-mode { position: absolute; top: 8px; left: 8px; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; z-index: 10; }
+  .mode-normal { background: #1f6feb22; color: #9cc9ff; border: 1px solid #1f6feb; }
+  .mode-terror { background: #f093fb22; color: #f0a9ff; border: 1px solid #f093fb; }
+  .hud-item { position: absolute; width: 120px; height: 30px; border: 2px solid #3a3f4b; border-radius: 4px; background: #0b0c10; color: #c5c6c7; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 5; }
+  .hud-item.terror-only { display: none; }
+  .terror-active .hud-item.terror-only { display: flex; }
+  .terror-active .hud-item.normal-only { display: none; }
+  .hud-item.normal-only { }
+  .world-obj { position: absolute; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #3a3f4b; background: #14151a; pointer-events: none; z-index: 5; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #888; }
+  .terror-active .world-obj.terror-only { display: flex; }
+  .terror-active .world-obj.normal-only { display: none; }
+  .world-obj.normal-only { }
+  .terror-active { filter: invert(0.2) hue-rotate(180deg) contrast(1.3); background: #050308 !important; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Vision Mode Layer Manager</h1>
+    <div class="subtitle">Game 2 — normal vision vs terror vision, which HUD elements and world objects show</div>
+  </div>
+  <div style="margin-left:auto; font-size:0.7rem;color:#888;">Web-only · solo dev · conceptual phase</div>
+</header>
+
+<main>
+  <div class="panel">
+    <h3>1 · HUD elements</h3>
+    <div class="row col">
+      <label>Element name</label>
+      <input type="text" id="hudName" placeholder="e.g. Inventory, Sanity, Flashlight">
+    </div>
+    <div class="row col">
+      <label>Normal vision visible?</label>
+      <div class="toggle"><input type="checkbox" id="hudNormal" checked><div class="slider"></div></div>
+    </div>
+    <div class="row col">
+      <label>Terror vision visible?</label>
+      <div class="toggle"><input type="checkbox" id="hudTerror"><div class="slider"></div></div>
+    </div>
+    <div class="row col">
+      <label>Position (left, top in %)</label>
+      <input type="text" id="hudPos" placeholder="e.g. 20, 10">
+    </div>
+    <div class="row col">
+      <label>Color</label>
+      <input type="color" id="hudColor" value="#66fcf1">
+    </div>
+    <button class="primary small" onclick="app.addHud()">Add HUD element</button>
+    <div id="hudList" style="max-height: 200px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+  </div>
+
+  <div class="panel">
+    <h3>2 · World objects / props</h3>
+    <div class="row col">
+      <label>Object name</label>
+      <input type="text" id="objName" placeholder="e.g. Camera, Animatronic, Locker">
+    </div>
+    <div class="row col">
+      <label>Normal vision visible?</label>
+      <div class="toggle"><input type="checkbox" id="objNormal" checked><div class="slider"></div></div>
+    </div>
+    <div class="row col">
+      <label>Terror vision visible?</label>
+      <div class="toggle"><input type="checkbox" id="objTerror"><div class="slider"></div></div>
+    </div>
+    <div class="row col">
+      <label>Position (left, top in %)</label>
+      <input type="text" id="objPos" placeholder="e.g. 50, 40">
+    </div>
+    <div class="row col">
+      <label>Color</label>
+      <input type="color" id="objColor" value="#f093fb">
+    </div>
+    <button class="primary small" onclick="app.addObj()">Add object</button>
+    <div id="objList" style="max-height: 200px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+  </div>
+
+  <div class="panel">
+    <h3>3 · Terror triggers</h3>
+    <div class="row col">
+      <label>Condition that activates terror vision</label>
+      <input type="text" id="terrorTrigger" placeholder="e.g. player near animatronic, sanity < 30%">
+    </div>
+    <div class="row col">
+      <label>Duration (seconds, 0 = permanent)</label>
+      <input type="number" id="terrorDur" value="0" min="0">
+    </div>
+    <button class="secondary small" onclick="app.setTrigger()">Set trigger</div>
+    <div id="triggerShow" style="font-size:0.7rem;color:#888;margin-top:6px;"></div>
+  </div>
+
+  <div class="panel" style="margin-top:auto;">
+    <h3>4 · Preview & export</h3>
+    <div style="display:flex;gap:8px;">
+      <div class="toggle"><input type="checkbox" id="previewTerror" onchange="app.drawPreview()"><div class="slider"></div></div>
+      <label style="font-size:0.7rem;color:#888;margin:0;">Terror mode preview</label>
+    </div>
+    <div id="preview"></div>
+    <div class="row btn-group" style="margin-top:8px;">
+      <button class="primary" onclick="app.exportJSON()">Export vision JSON</button>
+      <button class="danger" onclick="app.clearAll()">Clear all</button>
+    </div>
+    <div class="hint">Export defines which HUD elements and props appear in each vision mode. Your game code reads this to swap layers.</div>
+  </div>
+</main>
+
+<script>
+/**
+ * Meridian Vision Mode Layer Manager
+ *
+ * Game 2 design tool. You described two vision modes:
+ *   Normal vision — versatile HUD, commonly used gameplay elements
+ *   Terror vision — activated when player is scared, shows survival/hiding info
+ *
+ * This lets you define which HUD elements and world props appear in each mode,
+ * preview both side by side, and export JSON your game reads at runtime.
+ */
+
+class App {
+  constructor() {
+    this.huds = [];
+    this.objs = [];
+    this.terrorTrigger = '';
+    this.terrorDur = 0;
+
+    this.hudName = document.getElementById('hudName');
+    this.hudNormal = document.getElementById('hudNormal');
+    this.hudTerror = document.getElementById('hudTerror');
+    this.hudPos = document.getElementById('hudPos');
+    this.hudColor = document.getElementById('hudColor');
+    this.hudList = document.getElementById('hudList');
+
+    this.objName = document.getElementById('objName');
+    this.objNormal = document.getElementById('objNormal');
+    this.objTerror = document.getElementById('objTerror');
+    this.objPos = document.getElementById('objPos');
+    this.objColor = document.getElementById('objColor');
+    this.objList = document.getElementById('objList');
+
+    this.terrorTrigger = document.getElementById('terrorTrigger');
+    this.terrorDur = document.getElementById('terrorDur');
+    this.triggerShow = document.getElementById('triggerShow');
+    this.preview = document.getElementById('preview');
+    this.previewTerror = document.getElementById('previewTerror');
+  }
+
+  addHud() {
+    const name = this.hudName.value.trim();
+    if (!name) return;
+    const [l, t] = this.parsePos(this.hudPos.value);
+    this.huds.push({
+      id: crypto.randomUUID(),
+      name,
+      normal: this.hudNormal.checked,
+      terror: this.hudTerror.checked,
+      left: l !== null ? l : 20,
+      top: t !== null ? t : 10,
+      color: this.hudColor.value,
+    });
+    this.hudName.value = '';
+    this.hudPos.value = '';
+    this.renderHuds();
+    this.drawPreview();
+  }
+
+  parsePos(v) {
+    if (!v) return [null, null];
+    const parts = v.split(',').map(s => Number(s.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) return parts;
+    return [null, null];
+  }
+
+  removeHud(id) {
+    this.huds = this.huds.filter(h => h.id !== id);
+    this.renderHuds();
+    this.drawPreview();
+  }
+
+  renderHuds() {
+    this.hudList.innerHTML = '';
+    for (const h of this.huds) {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.style.padding = '8px';
+      const modes = [];
+      if (h.normal) modes.push('<span class="chip normal">normal</span>');
+      if (h.terror) modes.push('<span class="chip terror">terror</span>');
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;">
+          <div class="card-name">${h.name}</div>
+          <div>${modes.join(' ')}</div>
+        </div>
+        <div style="font-size:0.7rem;color:#888;">${h.left}%, ${h.top}% · ${h.color}</div>
+        <button class="chip removable small" onclick="app.removeHud('${h.id}')" style="padding:0 6px;">×</button>
+      `;
+      this.hudList.appendChild(div);
+    }
+  }
+
+  addObj() {
+    const name = this.objName.value.trim();
+    if (!name) return;
+    const [l, t] = this.parsePos(this.objPos.value);
+    this.objs.push({
+      id: crypto.randomUUID(),
+      name,
+      normal: this.objNormal.checked,
+      terror: this.objTerror.checked,
+      left: l !== null ? l : 50,
+      top: t !== null ? t : 40,
+      color: this.objColor.value,
+    });
+    this.objName.value = '';
+    this.objPos.value = '';
+    this.renderObjs();
+    this.drawPreview();
+  }
+
+  removeObj(id) {
+    this.objs = this.objs.filter(o => o.id !== id);
+    this.renderObjs();
+    this.drawPreview();
+  }
+
+  renderObjs() {
+    this.objList.innerHTML = '';
+    for (const o of this.objs) {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.style.padding = '8px';
+      const modes = [];
+      if (o.normal) modes.push('<span class="chip normal">normal</span>');
+      if (o.terror) modes.push('<span class="chip terror">terror</span>');
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;">
+          <div class="card-name">${o.name}</div>
+          <div>${modes.join(' ')}</div>
+        </div>
+        <div style="font-size:0.7rem;color:#888;">${o.left}%, ${o.top}% · ${o.color}</div>
+        <button class="chip removable small" onclick="app.removeObj('${o.id}')" style="padding:0 6px;">×</button>
+      `;
+      this.objList.appendChild(div);
+    }
+  }
+
+  setTrigger() {
+    this.triggerShow.textContent = `Terror activates when: ${this.terrorTrigger.value || '(none set)'} · duration: ${this.terrorDur.value || 0}s`;
+  }
+
+  drawPreview() {
+    const terror = this.previewTerror.checked;
+    this.preview.className = terror ? 'terror-active' : '';
+    this.preview.innerHTML = `
+      <div class="preview-mode ${terror ? 'mode-terror' : 'mode-normal'}">${terror ? 'TERROR VISION' : 'NORMAL VISION'}</div>
+    `;
+    // HUD elements
+    for (const h of this.huds) {
+      const el = document.createElement('div');
+      el.className = `hud-item ${!h.normal ? 'terror-only' : ''} ${!h.terror ? 'normal-only' : ''}`;
+      el.style.left = h.left + '%';
+      el.style.top = h.top + '%';
+      el.style.borderColor = h.color;
+      el.style.color = h.color;
+      el.textContent = h.name;
+      this.preview.appendChild(el);
+    }
+    // World objects
+    for (const o of this.objs) {
+      const el = document.createElement('div');
+      el.className = `world-obj ${!o.normal ? 'terror-only' : ''} ${!o.terror ? 'normal-only' : ''}`;
+      el.style.left = o.left + '%';
+      el.style.top = o.top + '%';
+      el.style.borderColor = o.color;
+      el.style.background = o.color + '22';
+      el.style.color = o.color;
+      el.textContent = o.name;
+      this.preview.appendChild(el);
+    }
+  }
+
+  exportJSON() {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      terrorTrigger: this.terrorTrigger.value.trim(),
+      terrorDur: Number(this.terrorDur.value) || 0,
+      huds: this.huds,
+      objects: this.objs,
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meridian-vision-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  clearAll() {
+    if (!confirm('Clear all HUD elements, objects, and triggers?')) return;
+    this.huds = [];
+    this.objs = [];
+    this.terrorTrigger.value = '';
+    this.terrorDur.value = '0';
+    this.triggerShow.textContent = '';
+    this.renderHuds();
+    this.renderObjs();
+    this.drawPreview();
+  }
+}
+
+const app = new App();
+app.drawPreview();
+</script>
+</body>
+</html>
