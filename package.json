@@ -1,0 +1,25 @@
+{
+  "name": "meridian",
+  "version": "1.0.0",
+  "description": "A personal CLI knowledge & note manager — capture, organize, and retrieve your notes from the terminal.",
+  "main": "src/index.js",
+  "bin": {
+    "meridian": "src/index.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test 'tests/*.test.js' --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trabar-tech/Meridian.git"
+  },
+  "keywords": ["cli", "notes", "knowledge", "productivity", "terminal"],
+  "author": "Meridian",
+  "license": "MIT",
+  "devDependencies": {}
+}
