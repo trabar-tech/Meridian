@@ -101,6 +101,9 @@ Meridian/
 │       ├── level-companion/
 │       │   ├── index.html   # room graph + item heatmaps + JSON export
 │       │   └── README.md
+│       ├── map-layer-simulator/
+│       │   ├── index.html   # draw map layers, simulate [LOCATION] testimony from coordinates
+│       │   └── README.md
 │       ├── context-validator/
 │       │   └── index.html   # validates map/NPC JSON for dangling context refs
 │       ├── dialogue-builder/
@@ -132,6 +135,7 @@ See [docs/contributing.md](./docs/contributing.md) for how to contribute.
 Under `tools/game-dev/` you'll find a set of single-file, browser-based tools for solo game development. All run offline with zero build step — just open `index.html` in a browser:
 
 - **Level Design Companion** (`level-companion/`) — room graph with tags, item heatmaps, JSON export. Build context-aware layouts instead of hard-coding every wall.
+- **Map Layer & Testimony Simulator** (`map-layer-simulator/`) — draw map layers (medbay, security, ...) and simulate `[LOCATION]` testimony from coordinates: "I saw PURPLE at MEDBAY." Tool for you to design and test the coordinate→layer lookup before writing game code.
 - **Context Validator** (`context-validator/`) — paste your map/NPC/item JSON; checks that every `[LOCATION]` bracket matches a real room tag, every NPC references an existing room, and factions/beings/agendas come from allowed lists.
 - **Dialogue Builder** (`dialogue-builder/`) — build NPC quick-chat lines with injected variables (`[LOCATION]`, `[FACTION]`, `[ITEM]`, etc.) and validate that every bracket has a data source before it breaks in-game.
 - **Contract Tool** (`contract-tool/`) — design missions/contracts and validate that every contract targets a real location with sane parameters.

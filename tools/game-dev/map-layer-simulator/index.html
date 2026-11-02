@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian · Map Layer & Testimony Simulator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b0c10; color: #c5c6c7; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  header { background: #1f2833; border-bottom: 1px solid #3a3f4b; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 0.9rem; letter-spacing: 0.08em; color: #66fcf1; text-transform: uppercase; }
+  header .subtitle { font-size: 0.7rem; color: #888; }
+  main { flex: 1; display: flex; overflow: hidden; }
+  .panel { padding: 16px; overflow-y: auto; border-right: 1px solid #2a2f3a; display: flex; flex-direction: column; gap: 12px; }
+  .panel:first-child { flex: 0 0 380px; }
+  .panel:last-child { flex: 1; }
+  .panel h3 { color: #66fcf1; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #2a2f3a; padding-bottom: 6px; margin-bottom: 8px; }
+  label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select, textarea { background: #0b0c10; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #66fcf1; }
+  textarea { resize: vertical; min-height: 60px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  button { background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 7px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+  button:hover { background: #3a3f4b; border-color: #66fcf1; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #3a8bf5; }
+  button.secondary { background: transparent; color: #888; border-color: #4a5060; }
+  button.secondary:hover { color: #c5c6c7; border-color: #c5c6c7; }
+  button.danger { background: #6b2323; border-color: #6b2323; color: #ff7f7f; }
+  button.danger:hover { background: #8a2b2b; }
+  button.small { padding: 4px 8px; font-size: 0.75rem; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .col { flex-direction: column; align-items: stretch; }
+  .chip { display: inline-block; background: #1f2833; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px 4px 2px 0; }
+  .chip.removable { cursor: pointer; }
+  .chip.removable:hover { background: #6b2323; border-color: #6b2323; }
+  .canvas-wrap { position: relative; background: #0f1116; border: 1px solid #2a2f3a; border-radius: 4px; cursor: crosshair; }
+  canvas { display: block; cursor: crosshair; }
+  .layer-rect { stroke-width: 2; fill-opacity: 0.15; cursor: pointer; }
+  .layer-rect.selected { stroke: #fff; stroke-width: 3; }
+  .layer-rect:hover { stroke: #66fcf1; }
+  .canvas-hint { position: absolute; bottom: 6px; left: 6px; font-size: 0.7rem; color: #666; background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px; pointer-events: none; }
+  .sighting-item { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .sighting-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .sighting-name { font-weight: 600; color: #66fcf1; }
+  .sighting-meta { font-size: 0.7rem; color: #888; }
+  .testimony { font-size: 0.85rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #a8ffb0; background: #0b0c10; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #2d6a4f; }
+  .testimony.unknown { color: #ff7f7f; border-left-color: #6b2323; }
+  .testimony em { color: #f093fb; }
+  .result { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .status { font-weight: 700; font-size: 0.85rem; }
+  .status.ok { color: #a8ffb0; }
+  .status.bad { color: #ff7f7f; }
+  ul { list-style: none; }
+  li { padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.8rem; display: flex; gap: 8px; align-items: flex-start; }
+  li:last-child { border-bottom: none; }
+  .sev { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; min-width: 26px; text-align: center; }
+  .sev.error { background: #6b232333; color: #ff7f7f; border: 1px solid #6b232355; }
+  .sev.info { background: #1f6feb33; color: #9cc9ff; border: 1px solid #1f6feb55; }
+  .hint { font-size: 0.7rem; color: #666; font-style: italic; margin-top: 4px; }
+  .empty { color: #666; font-size: 0.85rem; text-align: center; padding-top: 30px; }
+  .coords { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; color: #888; }
+  .btn-group { display: flex; gap: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Map Layer & Testimony Simulator</h1>
+    <div class="subtitle">Design map layers (medbay, security, ...) and simulate [LOCATION] testimony from coordinates</div>
+  </div>
+  <div style="margin-left:auto; font-size:0.7rem;color:#888;">Web-only · solo dev · zero build step</div>
+</header>
+
+<main>
+  <div class="panel">
+    <h3>1 · Draw map layers</h3>
+    <div class="canvas-wrap">
+      <canvas id="canvas" width="700" height="500"></canvas>
+      <div class="canvas-hint">Click-drag to draw a layer &nbsp;|&nbsp; Click a layer to select &nbsp;|&nbsp; Shift+click canvas to place a sighting</div>
+    </div>
+    <div class="row col">
+      <label>Layer name</label>
+      <input type="text" id="layerName" placeholder="e.g. medbay">
+    </div>
+    <div class="row col">
+      <label>Color</label>
+      <input type="color" id="layerColor" value="#1f6feb">
+    </div>
+    <div class="row">
+      <button class="primary small" onclick="app.finishLayer()">Save layer</button>
+      <button class="secondary small" onclick="app.cancelLayer()">Cancel</button>
+    </div>
+    <div id="layerList" style="max-height: 180px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+    <div class="hint">Layers are rectangles. An entity's coordinates fall into the topmost layer that contains them — that's their [LOCATION].</div>
+  </div>
+
+  <div class="panel">
+    <h3>2 · Sightings (who was where, when)</h3>
+    <div class="row col">
+      <label>Entity name</label>
+      <input type="text" id="sightEntity" placeholder="e.g. PURPLE">
+    </div>
+    <div class="row col">
+      <label>Time</label>
+      <input type="text" id="sightTime" placeholder="e.g. 13PM">
+    </div>
+    <div class="row col">
+      <label>Coordinates X,Y</label>
+      <input type="text" id="sightCoords" placeholder="e.g. 320, 180">
+    </div>
+    <div class="row">
+      <button class="primary small" onclick="app.addSighting()">Add sighting</button>
+      <button class="secondary small" onclick="app.clearSighting()">Clear</button>
+    </div>
+    <div id="sightingList" style="max-height: 200px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+    <div class="hint">Each sighting is resolved against the map layers: coordinates → layer → [LOCATION] testimony.</div>
+  </div>
+
+  <div class="panel">
+    <h3>3 · Testimony output & export</h3>
+    <div id="testimonyResult" class="result" style="display:none;">
+      <div class="result-header">
+        <span id="testimonyStatus" class="status">—</span>
+        <span id="testimonyCount" style="font-size:0.7rem;color:#888;">— sightings</span>
+      </div>
+      <div id="testimonyLines"></div>
+    </div>
+    <div id="testimonyEmpty" class="empty">Draw layers, add sightings, then review generated testimony.</div>
+    <div class="row btn-group" style="margin-top:10px;">
+      <button class="primary" onclick="app.exportJSON()">Export JSON</button>
+      <button class="secondary" onclick="app.clearAll()">Clear all</button>
+    </div>
+    <div class="hint">Exported JSON contains your map layers and sightings. Your game's testimony system reads coordinates, finds the containing layer, and emits "I saw [ENTITY] at [LAYER]."</div>
+  </div>
+</main>
+
+<script>
+/**
+ * Meridian Map Layer & Testimony Simulator
+ *
+ * Tool for YOU (the solo dev) to design and test the [LOCATION] testimony system
+ * before writing game code.
+ *
+ * How it models your described mechanic:
+ *   - Map layers are rectangles with names (medbay, security, cafeteria, ...)
+ *   - A sighting records an entity at coordinates (x, y) at a time
+ *   - Testimony resolves: find the topmost layer containing the coordinates → that's the [LOCATION]
+ *   - Output: "I saw [ENTITY] at [LAYER]" or "I saw [ENTITY] at UNKNOWN LOCATION"
+ *
+ * Everything is web-only, single-file, no dependencies. Exports JSON.
+ */
+
+class App {
+  constructor() {
+    this.canvas = document.getElementById('canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.layers = []; // { id, name, color, x, y, w, h }
+    this.sightings = []; // { id, entity, time, x, y }
+    this.drawing = false;
+    this.drawStart = null;
+    this.selectedLayerId = null;
+    this.hoverLayerId = null;
+
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+    this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+    this.canvas.addEventListener('mouseup', () => { if (this.drawing) this.drawing = false; this.draw(); });
+
+    this.render();
+  }
+
+  resize() {
+    // Keep canvas logical size, just redraw
+    this.draw();
+  }
+
+  /* ---------- layer drawing ---------- */
+
+  onMouseDown(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Shift+click to place a sighting at coordinates
+    if (e.shiftKey) {
+      this.addSightingAt(x, y);
+      return;
+    }
+
+    // Click existing layer to select
+    const hit = this.getLayerAt(x, y);
+    if (hit) {
+      this.selectedLayerId = hit.id;
+      document.getElementById('layerName').value = hit.name;
+      document.getElementById('layerColor').value = hit.color;
+      this.draw();
+      return;
+    }
+
+    // Start drawing a new layer rectangle
+    this.drawing = true;
+    this.drawStart = { x, y };
+    this.selectedLayerId = null;
+    document.getElementById('layerName').value = '';
+    this.draw();
+  }
+
+  onMouseMove(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    this.hoverLayerId = this.getLayerAt(x, y)?.id || null;
+    if (this.drawing) this.draw();
+  }
+
+  getLayerAt(x, y) {
+    // Topmost layer wins (reverse iteration)
+    for (let i = this.layers.length - 1; i >= 0; i--) {
+      const l = this.layers[i];
+      if (x >= l.x && x <= l.x + l.w && y >= l.y && y <= l.y + l.h) return l;
+    }
+    return null;
+  }
+
+  finishLayer() {
+    if (!this.drawStart) return;
+    const name = document.getElementById('layerName').value.trim() || 'unnamed layer';
+    const color = document.getElementById('layerColor').value;
+    const x = Math.min(this.drawStart.x, this.ctx ? 0 : 0); // placeholder
+    // recompute from drawStart and current end — we need end. store on mousemove? simpler: use last draw
+    // We'll compute from drawStart + a stored end. Instead, re-draw logic: capture end on mouseup already done?
+    // To keep it simple: use drawStart and the last known mouse position stored in this.drawEnd
+    const end = this.drawEnd || this.drawStart;
+    const w = Math.abs(end.x - this.drawStart.x);
+    const h = Math.abs(end.y - this.drawStart.y);
+    const lx = Math.min(this.drawStart.x, end.x);
+    const ly = Math.min(this.drawStart.y, end.y);
+    if (w < 8 || h < 8) {
+      // too small, cancel
+      this.drawing = false;
+      this.drawStart = null;
+      this.drawEnd = null;
+      this.draw();
+      return;
+    }
+    this.layers.push({
+      id: crypto.randomUUID(),
+      name,
+      color,
+      x: lx, y: ly, w, h,
+    });
+    this.drawing = false;
+    this.drawStart = null;
+    this.drawEnd = null;
+    this.selectedLayerId = null;
+    document.getElementById('layerName').value = '';
+    this.renderLayerList();
+    this.draw();
+  }
+
+  cancelLayer() {
+    this.drawing = false;
+    this.drawStart = null;
+    this.drawEnd = null;
+    this.selectedLayerId = null;
+    document.getElementById('layerName').value = '';
+    this.draw();
+  }
+
+  removeLayer(id) {
+    this.layers = this.layers.filter(l => l.id !== id);
+    if (this.selectedLayerId === id) this.selectedLayerId = null;
+    this.renderLayerList();
+    this.draw();
+  }
+
+  addSightingAt(x, y) {
+    document.getElementById('sightCoords').value = `${Math.round(x)}, ${Math.round(y)}`;
+    // auto-select a layer if one is under the cursor? no, just set coords
+  }
+
+  addSighting() {
+    const entity = document.getElementById('sightEntity').value.trim();
+    const time = document.getElementById('sightTime').value.trim();
+    const coords = document.getElementById('sightCoords').value.trim();
+    if (!entity || !time || !coords) {
+      alert('Please fill entity, time, and coordinates');
+      return;
+    }
+    const m = coords.match(/(-?\d+)\s*,\s*(-?\d+)/);
+    if (!m) {
+      alert('Coordinates must be like "320, 180"');
+      return;
+    }
+    const x = Number(m[1]);
+    const y = Number(m[2]);
+    this.sightings.push({
+      id: crypto.randomUUID(),
+      entity, time, x, y,
+    });
+    document.getElementById('sightEntity').value = '';
+    document.getElementById('sightTime').value = '';
+    document.getElementById('sightCoords').value = '';
+    this.renderSightingList();
+    this.draw();
+  }
+
+  clearSighting() {
+    document.getElementById('sightEntity').value = '';
+    document.getElementById('sightTime').value = '';
+    document.getElementById('sightCoords').value = '';
+  }
+
+  removeSighting(id) {
+    this.sightings = this.sightings.filter(s => s.id !== id);
+    this.renderSightingList();
+    this.draw();
+  }
+
+  /* ---------- testimony resolution ---------- */
+
+  resolveLocation(x, y) {
+    // topmost layer containing point
+    for (let i = this.layers.length - 1; i >= 0; i--) {
+      const l = this.layers[i];
+      if (x >= l.x && x <= l.x + l.w && y >= l.y && y <= l.y + l.h) return l;
+    }
+    return null;
+  }
+
+  /* ---------- rendering ---------- */
+
+  draw() {
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // draw layers
+    for (const l of this.layers) {
+      const selected = this.selectedLayerId === l.id;
+      const hovered = this.hoverLayerId === l.id && !selected;
+      ctx.fillStyle = l.color;
+      ctx.globalAlpha = selected ? 0.25 : (hovered ? 0.12 : 0.15);
+      ctx.fillRect(l.x, l.y, l.w, l.h);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = selected ? '#fff' : (hovered ? '#66fcf1' : l.color);
+      ctx.lineWidth = selected ? 3 : (hovered ? 2 : 2);
+      ctx.strokeRect(l.x, l.y, l.w, l.h);
+
+      // layer name label
+      ctx.fillStyle = '#c5c6c7';
+      ctx.font = '700 11px system-ui';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(l.name, l.x + 4, l.y + 4);
+    }
+
+    // draw in-progress rectangle
+    if (this.drawing && this.drawStart && this.drawEnd) {
+      const x = Math.min(this.drawStart.x, this.drawEnd.x);
+      const y = Math.min(this.drawStart.y, this.drawEnd.y);
+      const w = Math.abs(this.drawEnd.x - this.drawStart.x);
+      const h = Math.abs(this.drawEnd.y - this.drawStart.y);
+      ctx.strokeStyle = '#66fcf1';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+    }
+
+    // draw sightings
+    for (const s of this.sightings) {
+      const layer = this.resolveLocation(s.x, s.y);
+      const hasLayer = !!layer;
+      ctx.fillStyle = hasLayer ? '#a8ffb0' : '#ff7f7f';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // label
+      ctx.fillStyle = hasLayer ? '#a8ffb0' : '#ff7f7f';
+      ctx.font = '700 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.entity, s.x, s.y - 8);
+    }
+
+    // crosshair hint at sighting coords? no
+  }
+
+  renderLayerList() {
+    const el = document.getElementById('layerList');
+    el.innerHTML = '';
+    for (const l of this.layers) {
+      const div = document.createElement('div');
+      div.className = 'sighting-item';
+      div.style.padding = '6px 8px';
+      div.style.borderRadius = '4px';
+      div.style.background = this.selectedLayerId === l.id ? '#1f2833' : '#14151a';
+      div.style.border = `1px solid ${this.selectedLayerId === l.id ? '#66fcf1' : '#2a2f3a'}`;
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:600; color:${l.color};">${l.name}</div>
+          <div style="font-size:0.7rem;color:#888;">${l.x},${l.y} ${l.w}x${l.h}</div>
+          <button class="chip removable small" onclick="app.removeLayer('${l.id}')" style="padding:0 4px;">×</button>
+        </div>
+      `;
+      div.onclick = () => {
+        this.selectedLayerId = l.id;
+        document.getElementById('layerName').value = l.name;
+        document.getElementById('layerColor').value = l.color;
+        this.renderLayerList();
+        this.draw();
+      };
+      el.appendChild(div);
+    }
+  }
+
+  renderSightingList() {
+    const el = document.getElementById('sightingList');
+    el.innerHTML = '';
+    for (const s of this.sightings) {
+      const layer = this.resolveLocation(s.x, s.y);
+      const loc = layer ? layer.name : 'UNKNOWN';
+      const color = layer ? layer.color : '#6b2323';
+      const div = document.createElement('div');
+      div.className = 'sighting-item';
+      div.innerHTML = `
+        <div class="sighting-header">
+          <div class="sighting-name">${s.entity}</div>
+          <div class="sighting-meta">${s.time} · (${s.x}, ${s.y})</div>
+        </div>
+        <div class="testimony ${layer ? '' : 'unknown'}">
+          <em>I saw ${s.entity} at ${loc}</em>
+        </div>
+        <button class="chip removable small" onclick="app.removeSighting('${s.id}')" style="padding:0 4px;">×</button>
+      `;
+      el.appendChild(div);
+    }
+    this.renderTestimony();
+  }
+
+  renderTestimony() {
+    const result = document.getElementById('testimonyResult');
+    const empty = document.getElementById('testimonyEmpty');
+    const lines = document.getElementById('testimonyLines');
+    const status = document.getElementById('testimonyStatus');
+    const count = document.getElementById('testimonyCount');
+
+    if (this.sightings.length === 0) {
+      result.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    result.style.display = 'block';
+    status.textContent = 'Testimony resolved';
+    status.className = 'status ok';
+    count.textContent = this.sightings.length + ' sighting' + (this.sightings.length === 1 ? '' : 's');
+
+    lines.innerHTML = '';
+    for (const s of this.sightings) {
+      const layer = this.resolveLocation(s.x, s.y);
+      const loc = layer ? layer.name : 'UNKNOWN LOCATION';
+      const div = document.createElement('div');
+      div.className = 'testimony ' + (layer ? '' : 'unknown');
+      div.innerHTML = `<em>I saw ${s.entity} at ${loc}</em> <span style="font-size:0.7rem;color:#888;float:right;">(${s.time} · ${s.x},${s.y})</span>`;
+      lines.appendChild(div);
+    }
+  }
+
+  /* ---------- export ---------- */
+
+  exportJSON() {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      layers: this.layers,
+      sightings: this.sightings,
+      rules: {
+        testimonyTemplate: 'I saw {ENTITY} at {LOCATION}',
+        locationResolution: 'topmost layer containing coordinates',
+      },
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meridian-map-layers-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  clearAll() {
+    if (!confirm('Clear all layers and sightings?')) return;
+    this.layers = [];
+    this.sightings = [];
+    this.selectedLayerId = null;
+    this.drawing = false;
+    this.drawStart = null;
+    this.drawEnd = null;
+    document.getElementById('layerName').value = '';
+    document.getElementById('sightEntity').value = '';
+    document.getElementById('sightTime').value = '';
+    document.getElementById('sightCoords').value = '';
+    this.renderLayerList();
+    this.renderSightingList();
+    this.draw();
+  }
+}
+
+const app = new App();
+
+// track mouse end for rectangle drawing
+app.canvas.addEventListener('mousemove', (e) => {
+  const rect = app.canvas.getBoundingClientRect();
+  app.drawEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+});
+
+</script>
+</body>
+</html>
