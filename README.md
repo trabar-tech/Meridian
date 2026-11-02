@@ -98,9 +98,15 @@ Meridian/
 │   └── architecture.md
 ├── tools/
 │   └── game-dev/
-│       └── level-companion/
-│           ├── index.html   # context-aware level design tool
-│           └── README.md
+│       ├── level-companion/
+│       │   ├── index.html   # room graph + item heatmaps + JSON export
+│       │   └── README.md
+│       ├── context-validator/
+│       │   └── index.html   # validates map/NPC JSON for dangling context refs
+│       ├── dialogue-builder/
+│       │   └── index.html   # NPC quick-chat lines with [VARIABLE] injection
+│       └── contract-tool/
+│           └── index.html   # mission contracts validated against map locations
 └── .gitignore
 ```
 
@@ -123,7 +129,14 @@ See [docs/contributing.md](./docs/contributing.md) for how to contribute.
 
 ## Related: Game Dev Tools
 
-Under `tools/game-dev/` you'll find the **Level Design Companion** — a single-file, browser-based tool for context-aware level design (room graphs, tag-based item heatmaps, JSON export). See `tools/game-dev/level-companion/README.md` for details.
+Under `tools/game-dev/` you'll find a set of single-file, browser-based tools for solo game development. All run offline with zero build step — just open `index.html` in a browser:
+
+- **Level Design Companion** (`level-companion/`) — room graph with tags, item heatmaps, JSON export. Build context-aware layouts instead of hard-coding every wall.
+- **Context Validator** (`context-validator/`) — paste your map/NPC/item JSON; checks that every `[LOCATION]` bracket matches a real room tag, every NPC references an existing room, and factions/beings/agendas come from allowed lists.
+- **Dialogue Builder** (`dialogue-builder/`) — build NPC quick-chat lines with injected variables (`[LOCATION]`, `[FACTION]`, `[ITEM]`, etc.) and validate that every bracket has a data source before it breaks in-game.
+- **Contract Tool** (`contract-tool/`) — design missions/contracts and validate that every contract targets a real location with sane parameters.
+
+See each tool's folder for details, or open `level-companion/README.md` for the fullest write-up.
 
 ## License
 

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian · Dialogue Builder</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b0c10; color: #c5c6c7; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  header { background: #1f2833; border-bottom: 1px solid #3a3f4b; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 0.9rem; letter-spacing: 0.08em; color: #66fcf1; text-transform: uppercase; }
+  header .subtitle { font-size: 0.7rem; color: #888; }
+  main { flex: 1; display: flex; overflow: hidden; }
+  .panel { padding: 16px; overflow-y: auto; border-right: 1px solid #2a2f3a; display: flex; flex-direction: column; gap: 12px; }
+  .panel:first-child { flex: 0 0 400px; }
+  .panel:last-child { flex: 1; }
+  .panel h3 { color: #66fcf1; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #2a2f3a; padding-bottom: 6px; margin-bottom: 8px; }
+  label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select, textarea { background: #0b0c10; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #66fcf1; }
+  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; min-height: 60px; }
+  button { background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 7px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+  button:hover { background: #3a3f4b; border-color: #66fcf1; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #3a8bf5; }
+  button.secondary { background: transparent; color: #888; border-color: #4a5060; }
+  button.secondary:hover { color: #c5c6c7; border-color: #c5c6c7; }
+  button.danger { background: #6b2323; border-color: #6b2323; color: #ff7f7f; }
+  button.danger:hover { background: #8a2b2b; }
+  button.small { padding: 4px 8px; font-size: 0.75rem; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .col { flex-direction: column; align-items: stretch; }
+  .chip { display: inline-flex; align-items: center; background: #1f2833; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px 4px 2px 0; }
+  .chip button { background: transparent; border: none; color: #666; padding: 0 4px; font-size: 0.8rem; line-height: 1; }
+  .chip button:hover { color: #ff7f7f; background: #6b232322; border-radius: 4px; }
+  .variable { color: #f093fb; font-weight: 600; }
+  .line-item { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .line-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .line-text { flex: 1; }
+  .line-meta { font-size: 0.7rem; color: #888; }
+  .bad-line { border-color: #6b2323; }
+  .bad-line .line-meta { color: #ff7f7f; }
+  .good-line { border-color: #2d6a4f; }
+  .result { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .status { font-weight: 700; font-size: 0.85rem; }
+  .status.ok { color: #a8ffb0; }
+  .status.bad { color: #ff7f7f; }
+  ul { list-style: none; }
+  li { padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.8rem; display: flex; gap: 8px; align-items: flex-start; }
+  li:last-child { border-bottom: none; }
+  .sev { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; min-width: 26px; text-align: center; }
+  .sev.error { background: #6b232333; color: #ff7f7f; border: 1px solid #6b232355; }
+  .sev.info { background: #1f6feb33; color: #9cc9ff; border: 1px solid #1f6feb55; }
+  .hint { font-size: 0.7rem; color: #666; font-style: italic; margin-top: 4px; }
+  .vars-help { font-size: 0.7rem; color: #888; margin-top: 6px; }
+  .vars-help .variable { color: #f093fb; }
+  .empty { color: #666; font-size: 0.85rem; text-align: center; padding-top: 30px; }
+  .btn-group { display: flex; gap: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Dialogue Builder</h1>
+    <div class="subtitle">Build NPC quick-chat templates with injected variables like [LOCATION], [FACTION], [ITEM]</div>
+  </div>
+  <div style="margin-left:auto; font-size:0.7rem;color:#888;">Web-only · solo dev · zero build step</div>
+</header>
+
+<main>
+  <div class="panel">
+    <h3>1 · NPCs</h3>
+    <div class="row col">
+      <label>NPC name</label>
+      <input type="text" id="npcName" placeholder="e.g. Crewmate A">
+    </div>
+    <div class="row col">
+      <label>Faction</label>
+      <select id="npcFaction">
+        <option value="crew">Crew</option>
+        <option value="rival">Rival faction</option>
+        <option value="law">Law</option>
+        <option value="alien">Alien organism</option>
+        <option value="unknown">Unknown</option>
+      </select>
+    </div>
+    <div class="row col">
+      <label>Being</label>
+      <select id="npcBeing">
+        <option value="human">Human</option>
+        <option value="android">Android</option>
+        <option value="organism">Organism</option>
+        <option value="animatronic">Animatronic</option>
+        <option value="unknown">Unknown</option>
+      </select>
+    </div>
+    <button class="primary small btn-group" onclick="app.addNpc()">Add NPC</button>
+    <div id="npcList" style="max-height: 220px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+    <div class="hint">Each NPC gets its own dialogue list. Variables in lines are validated against this NPC's context.</div>
+  </div>
+
+  <div class="panel">
+    <h3>2 · Dialogue lines</h3>
+    <div id="noNpc" class="empty">Select an NPC from the list on the left.</div>
+    <div id="npcEditor" style="display:none;">
+      <div class="row col">
+        <label>Current NPC: <span id="currentNpcName" style="color:#66fcf1;"></span></label>
+      </div>
+      <div class="row col">
+        <label>Dialogue line (use [VARIABLE] for injection)</label>
+        <textarea id="dialogueLine" placeholder='e.g. "I saw them at [LOCATION]!" or "That [ITEM] is mine!"'></textarea>
+      </div>
+      <div class="row">
+        <button class="primary small" onclick="app.addLine()">Add line</button>
+        <button class="secondary small" onclick="app.clearLine()">Clear</button>
+      </div>
+      <div id="lineList"></div>
+      <div class="vars-help">
+        <div>Available variables:</div>
+        <div><span class="variable">[LOCATION]</span> · <span class="variable">[FACTION]</span> · <span class="variable">[BEING]</span> · <span class="variable">[AGENDA]</span> · <span class="variable">[ITEM]</span> · <span class="variable">[ROOM]</span></div>
+        <div style="margin-top:4px;">Every <span class="variable">[...]</span> must match a variable the game can fill, or it's flagged as broken.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>3 · Validation & export</h3>
+    <div id="dialogueResult" class="result" style="display:none;">
+      <div class="result-header">
+        <span id="dialogueStatus" class="status">—</span>
+        <span id="dialogueCount" style="font-size:0.7rem;color:#888;">— issues</span>
+      </div>
+      <ul id="dialogueIssues"></ul>
+    </div>
+    <div id="dialogueEmpty" class="empty">Add NPCs and dialogue lines, then validate.</div>
+    <div class="row btn-group" style="margin-top:10px;">
+      <button class="primary" onclick="app.validateDialogue()">Validate all</button>
+      <button class="secondary" onclick="app.exportJSON()">Export JSON</button>
+      <button class="danger" onclick="app.clearAll()">Clear all</button>
+    </div>
+    <div class="hint">Exported JSON is ready for your game's dialogue system to consume at runtime.</div>
+  </div>
+</main>
+
+<script>
+/**
+ * Meridian Dialogue Builder
+ *
+ * Builds NPC quick-chat lines with injected variables ([LOCATION], [ITEM], etc.)
+ * and validates that every [...] bracket has a valid data source.
+ *
+ * For games like your Among Us/Signalis concept where NPCs "point at" things
+ * using bracketed context instead of picking from premade options.
+ */
+
+const VALID_VARIABLES = ['LOCATION', 'FACTION', 'BEING', 'AGENDA', 'ITEM', 'ROOM'];
+
+class App {
+  constructor() {
+    this.npcs = []; // { id, name, faction, being, lines: [] }
+    this.selectedNpcId = null;
+
+    this.npcName = document.getElementById('npcName');
+    this.npcFaction = document.getElementById('npcFaction');
+    this.npcBeing = document.getElementById('npcBeing');
+    this.npcList = document.getElementById('npcList');
+    this.noNpc = document.getElementById('noNpc');
+    this.npcEditor = document.getElementById('npcEditor');
+    this.currentNpcName = document.getElementById('currentNpcName');
+    this.dialogueLine = document.getElementById('dialogueLine');
+    this.lineList = document.getElementById('lineList');
+
+    this.dialogueResult = document.getElementById('dialogueResult');
+    this.dialogueEmpty = document.getElementById('dialogueEmpty');
+    this.dialogueStatus = document.getElementById('dialogueStatus');
+    this.dialogueCount = document.getElementById('dialogueCount');
+    this.dialogueIssues = document.getElementById('dialogueIssues');
+  }
+
+  /* ---------- NPCs ---------- */
+
+  addNpc() {
+    const name = this.npcName.value.trim();
+    if (!name) {
+      alert('Please enter an NPC name');
+      return;
+    }
+    const npc = {
+      id: crypto.randomUUID(),
+      name,
+      faction: this.npcFaction.value,
+      being: this.npcBeing.value,
+      lines: [],
+    };
+    this.npcs.push(npc);
+    this.npcName.value = '';
+    this.renderNpcList();
+    if (this.selectedNpcId === null) this.selectNpc(npc.id);
+  }
+
+  selectNpc(id) {
+    this.selectedNpcId = id;
+    const npc = this.npcs.find(n => n.id === id);
+    this.currentNpcName.textContent = npc.name;
+    this.noNpc.style.display = 'none';
+    this.npcEditor.style.display = 'block';
+    this.renderLines();
+    this.renderNpcList();
+  }
+
+  removeNpc(id) {
+    this.npcs = this.npcs.filter(n => n.id !== id);
+    if (this.selectedNpcId === id) {
+      this.selectedNpcId = this.npcs.length ? this.npcs[0].id : null;
+      if (this.selectedNpcId) this.selectNpc(this.selectedNpcId);
+      else {
+        this.noNpc.style.display = 'block';
+        this.npcEditor.style.display = 'none';
+      }
+    }
+    this.renderNpcList();
+  }
+
+  renderNpcList() {
+    this.npcList.innerHTML = '';
+    for (const npc of this.npcs) {
+      const div = document.createElement('div');
+      div.className = 'line-item ' + (this.selectedNpcId === npc.id ? 'good-line' : '');
+      div.innerHTML = `
+        <div style="flex:1;">
+          <div style="font-weight:600;">${npc.name}</div>
+          <div class="line-meta">${npc.faction} · ${npc.being} · ${npc.lines.length} line${npc.lines.length === 1 ? '' : 's'}</div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="chip" onclick="app.selectNpc('${npc.id}')" style="padding:2px 6px;color:#66fcf1;">Open</button>
+          <button class="chip" onclick="app.removeNpc('${npc.id}')" style="padding:2px 6px;">×</button>
+        </div>
+      `;
+      this.npcList.appendChild(div);
+    }
+  }
+
+  /* ---------- Lines ---------- */
+
+  addLine() {
+    if (!this.selectedNpcId) return;
+    const text = this.dialogueLine.value.trim();
+    if (!text) return;
+    const npc = this.npcs.find(n => n.id === this.selectedNpcId);
+    npc.lines.push({ id: crypto.randomUUID(), text });
+    this.dialogueLine.value = '';
+    this.renderLines();
+  }
+
+  clearLine() {
+    this.dialogueLine.value = '';
+  }
+
+  removeLine(npcId, lineId) {
+    const npc = this.npcs.find(n => n.id === npcId);
+    npc.lines = npc.lines.filter(l => l.id !== lineId);
+    this.renderLines();
+  }
+
+  renderLines() {
+    this.lineList.innerHTML = '';
+    const npc = this.npcs.find(n => n.id === this.selectedNpcId);
+    if (!npc || !npc.lines.length) {
+      this.lineList.innerHTML = '<div style="color:#666;font-size:0.8rem;padding:10px;">No lines yet. Add one above.</div>';
+      return;
+    }
+    for (const line of npc.lines) {
+      const div = document.createElement('div');
+      div.className = 'line-item';
+      // show which variables are used
+      const vars = [...line.text.matchAll(/\[([^\]]+)\]/g)].map(m => m[1]);
+      varHtml = vars.map(v => `<span class="chip" style="border-color:#f093fb33;color:#f093fb;">[${v}]</span>`).join('');
+      div.innerHTML = `
+        <div class="line-header">
+          <div class="line-text">${this.escapeHtml(line.text)}</div>
+          <div class="line-meta">${vars.length ? vars.map(v => '['+v+']').join(' ') : 'no variables'}</div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="chip small" onclick="app.removeLine('${this.selectedNpcId}', '${line.id}')" style="padding:0 6px;">Delete</button>
+        </div>
+        ${varHtml ? `<div style="margin-top:4px;">${varHtml}</div>` : ''}
+      `;
+      this.lineList.appendChild(div);
+    }
+  }
+
+  /* ---------- Validation ---------- */
+
+  validateDialogue() {
+    const issues = [];
+
+    for (const npc of this.npcs) {
+      for (const line of npc.lines) {
+        const brackets = [...line.text.matchAll(/\[([^\]]+)\]/g)];
+        for (const m of brackets) {
+          const token = m[1];
+          if (!VALID_VARIABLES.includes(token)) {
+            issues.push({
+              sev: 'error',
+              npc: npc.name,
+              message: `Unknown variable [${token}] in line "${line.text}"`,
+              code: token,
+            });
+          }
+        }
+        // Check empty brackets
+        if (/\[\s*\]/.test(line.text)) {
+          issues.push({
+            sev: 'error',
+            npc: npc.name,
+            message: 'Empty brackets [] in line',
+            code: '[]',
+          });
+        }
+      }
+    }
+
+    const ok = issues.length === 0;
+    this.dialogueEmpty.style.display = 'none';
+    this.dialogueResult.style.display = 'block';
+    this.dialogueStatus.textContent = ok ? 'PASS — all variables valid' : 'FAIL — invalid variables found';
+    this.dialogueStatus.className = 'status ' + (ok ? 'ok' : 'bad');
+    this.dialogueCount.textContent = issues.length + ' issue' + (issues.length === 1 ? '' : 's');
+
+    this.dialogueIssues.innerHTML = '';
+    if (issues.length === 0) {
+      this.dialogueIssues.innerHTML = '<li style="color:#888; font-style:italic;">All dialogue variables are valid.</li>';
+      return;
+    }
+    for (const issue of issues) {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="sev error">ERROR</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;">${issue.npc}</div>
+          <div>${issue.message}</div>
+        </div>
+        <span style="font-size:0.7rem;color:#f093fb;">[${issue.code}]</span>
+      `;
+      this.dialogueIssues.appendChild(li);
+    }
+  }
+
+  /* ---------- Export ---------- */
+
+  escapeHtml(text) {
+    return text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  exportJSON() {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      npcs: this.npcs.map(n => ({
+        id: n.id,
+        name: n.name,
+        faction: n.faction,
+        being: n.being,
+        lines: n.lines.map(l => l.text),
+      })),
+    };
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meridian-dialogue-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  clearAll() {
+    if (!confirm('Clear all NPCs and dialogue?')) return;
+    this.npcs = [];
+    this.selectedNpcId = null;
+    this.noNpc.style.display = 'block';
+    this.npcEditor.style.display = 'none';
+    this.dialogueResult.style.display = 'none';
+    this.dialogueEmpty.style.display = 'block';
+    this.renderNpcList();
+  }
+}
+
+const app = new App();
+</script>
+</body>
+</html>

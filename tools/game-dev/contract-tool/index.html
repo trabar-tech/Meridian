@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian · Contract Tool</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b0c10; color: #c5c6c7; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  header { background: #1f2833; border-bottom: 1px solid #3a3f4b; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 0.9rem; letter-spacing: 0.08em; color: #66fcf1; text-transform: uppercase; }
+  header .subtitle { font-size: 0.7rem; color: #888; }
+  main { flex: 1; display: flex; overflow: hidden; }
+  .panel { padding: 16px; overflow-y: auto; border-right: 1px solid #2a2f3a; display: flex; flex-direction: column; gap: 12px; }
+  .panel:first-child { flex: 0 0 400px; }
+  .panel:last-child { flex: 1; }
+  .panel h3 { color: #66fcf1; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #2a2f3a; padding-bottom: 6px; margin-bottom: 8px; }
+  label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select, textarea { background: #0b0c10; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #66fcf1; }
+  textarea { resize: vertical; min-height: 60px; }
+  button { background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 7px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+  button:hover { background: #3a3f4b; border-color: #66fcf1; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #3a8bf5; }
+  button.secondary { background: transparent; color: #888; border-color: #4a5060; }
+  button.secondary:hover { color: #c5c6c7; border-color: #c5c6c7; }
+  button.danger { background: #6b2323; border-color: #6b2323; color: #ff7f7f; }
+  button.danger:hover { background: #8a2b2b; }
+  button.small { padding: 4px 8px; font-size: 0.75rem; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .col { flex-direction: column; align-items: stretch; }
+  .chip { display: inline-block; background: #1f2833; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px 4px 2px 0; }
+  .chip.removable { cursor: pointer; }
+  .chip.removable:hover { background: #6b2323; border-color: #6b2323; }
+  .contract-card { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .contract-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .contract-name { font-weight: 600; color: #66fcf1; }
+  .contract-meta { font-size: 0.7rem; color: #888; }
+  .bad-contract { border-color: #6b2323; }
+  .good-contract { border-color: #2d6a4f; }
+  .result { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .status { font-weight: 700; font-size: 0.85rem; }
+  .status.ok { color: #a8ffb0; }
+  .status.bad { color: #ff7f7f; }
+  ul { list-style: none; }
+  li { padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.8rem; display: flex; gap: 8px; align-items: flex-start; }
+  li:last-child { border-bottom: none; }
+  .sev { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; min-width: 26px; text-align: center; }
+  .sev.error { background: #6b232333; color: #ff7f7f; border: 1px solid #6b232355; }
+  .sev.info { background: #1f6feb33; color: #9cc9ff; border: 1px solid #1f6feb55; }
+  .hint { font-size: 0.7rem; color: #666; font-style: italic; margin-top: 4px; }
+  .empty { color: #666; font-size: 0.85rem; text-align: center; padding-top: 30px; }
+  .btn-group { display: flex; gap: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Contract Tool</h1>
+    <div class="subtitle">Design missions/contracts and validate them against your map</div>
+  </div>
+  <div style="margin-left:auto; font-size:0.7rem;color:#888;">Web-only · solo dev · zero build step</div>
+</header>
+
+<main>
+  <div class="panel">
+    <h3>1 · Map locations (reference)</h3>
+    <div class="row col">
+      <label>Location id</label>
+      <input type="text" id="locId" placeholder="e.g. r1">
+    </div>
+    <div class="row col">
+      <label>Location name</label>
+      <input type="text" id="locName" placeholder="e.g. Maintenance Closet">
+    </div>
+    <div class="row col">
+      <label>Tags (comma-separated)</label>
+      <input type="text" id="locTags" placeholder="maintenance, small, dark">
+    </div>
+    <button class="primary small" onclick="app.addLocation()">Add location</button>
+    <div id="locationList" style="max-height: 160px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+    <div class="hint">These are the real locations in your level. Contracts must reference existing ones.</div>
+  </div>
+
+  <div class="panel">
+    <h3>2 · Build a contract</h3>
+    <div class="row col">
+      <label>Contract name</label>
+      <input type="text" id="contractName" placeholder="e.g. Fix the ventilator">
+    </div>
+    <div class="row col">
+      <label>Objective type</label>
+      <select id="objType">
+        <option value="repair">Repair</option>
+        <option value="observe">Observe / note behavior</option>
+        <option value="retrieve">Retrieve item</option>
+        <option value="survive">Survive duration</option>
+        <option value="escape">Escape location</option>
+      </select>
+    </div>
+    <div class="row col">
+      <label>Location id (must exist above)</label>
+      <input type="text" id="contractLoc" placeholder="e.g. r1">
+    </div>
+    <div class="row col">
+      <label>Time limit (minutes, 0 = none)</label>
+      <input type="number" id="timeLimit" value="0" min="0">
+    </div>
+    <div class="row col">
+      <label>Failure state description</label>
+      <input type="text" id="failureState" placeholder="e.g. animatronic enters room">
+    </div>
+    <button class="primary small" onclick="app.addContract()">Add contract</button>
+    <div id="contractList" style="max-height: 200px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 4px; padding: 6px; background: #0b0c10;"></div>
+  </div>
+
+  <div class="panel">
+    <h3>3 · Validation & export</h3>
+    <div id="contractResult" class="result" style="display:none;">
+      <div class="result-header">
+        <span id="contractStatus" class="status">—</span>
+        <span id="contractCount" style="font-size:0.7rem;color:#888;">— issues</span>
+      </div>
+      <ul id="contractIssues"></ul>
+    </div>
+    <div id="contractEmpty" class="empty">Add locations and contracts, then validate.</div>
+    <div class="row btn-group" style="margin-top:10px;">
+      <button class="primary" onclick="app.validateContracts()">Validate all</button>
+      <button class="secondary" onclick="app.exportJSON()">Export JSON</button>
+      <button class="danger" onclick="app.clearAll()">Clear all</button>
+    </div>
+    <div class="hint">Checks: every contract points to a real location, time limits are sane, failure states are defined.</div>
+  </div>
+</main>
+
+<script>
+/**
+ * Meridian Contract Tool
+ *
+ * Designs missions/contracts and validates them against your map locations.
+ * Prevents the classic solo-dev bug: "this mission sends the player to a room
+ * that doesn't exist."
+ */
+
+class App {
+  constructor() {
+    this.locations = []; // { id, name, tags }
+    this.contracts = []; // { id, name, objective, locationId, timeLimit, failureState }
+
+    this.locId = document.getElementById('locId');
+    this.locName = document.getElementById('locName');
+    this.locTags = document.getElementById('locTags');
+    this.locationList = document.getElementById('locationList');
+
+    this.contractName = document.getElementById('contractName');
+    this.objType = document.getElementById('objType');
+    this.contractLoc = document.getElementById('contractLoc');
+    this.timeLimit = document.getElementById('timeLimit');
+    this.failureState = document.getElementById('failureState');
+    this.contractList = document.getElementById('contractList');
+
+    this.contractResult = document.getElementById('contractResult');
+    this.contractEmpty = document.getElementById('contractEmpty');
+    this.contractStatus = document.getElementById('contractStatus');
+    this.contractCount = document.getElementById('contractCount');
+    this.contractIssues = document.getElementById('contractIssues');
+  }
+
+  addLocation() {
+    const id = this.locId.value.trim();
+    const name = this.locName.value.trim();
+    if (!id || !name) {
+      alert('Please enter both id and name');
+      return;
+    }
+    if (this.locations.some(l => l.id === id)) {
+      alert('Location id already exists');
+      return;
+    }
+    const tags = this.locTags.value.split(',').map(t => t.trim()).filter(Boolean);
+    this.locations.push({ id, name, tags });
+    this.locId.value = '';
+    this.locName.value = '';
+    this.locTags.value = '';
+    this.renderLocations();
+  }
+
+  removeLocation(id) {
+    this.locations = this.locations.filter(l => l.id !== id);
+    // Remove contracts pointing to this location
+    this.contracts = this.contracts.filter(c => c.locationId !== id);
+    this.renderLocations();
+    this.renderContracts();
+  }
+
+  renderLocations() {
+    this.locationList.innerHTML = '';
+    for (const loc of this.locations) {
+      const div = document.createElement('div');
+      div.className = 'contract-card';
+      div.innerHTML = `
+        <div class="contract-header">
+          <div class="contract-name">${loc.name}</div>
+          <div class="contract-meta">${loc.id}</div>
+        </div>
+        <div style="font-size:0.7rem;color:#888;">${loc.tags.join(', ') || 'no tags'}</div>
+        <button class="chip removable small" onclick="app.removeLocation('${loc.id}')" style="padding:0 6px;">Remove</button>
+      `;
+      this.locationList.appendChild(div);
+    }
+  }
+
+  addContract() {
+    const name = this.contractName.value.trim();
+    const locId = this.contractLoc.value.trim();
+    if (!name || !locId) {
+      alert('Please enter contract name and location id');
+      return;
+    }
+    const contract = {
+      id: crypto.randomUUID(),
+      name,
+      objective: this.objType.value,
+      locationId: locId,
+      timeLimit: Number(this.timeLimit.value) || 0,
+      failureState: this.failureState.value.trim() || '(none)',
+    };
+    this.contracts.push(contract);
+    this.contractName.value = '';
+    this.contractLoc.value = '';
+    this.timeLimit.value = '0';
+    this.failureState.value = '';
+    this.renderContracts();
+  }
+
+  removeContract(id) {
+    this.contracts = this.contracts.filter(c => c.id !== id);
+    this.renderContracts();
+  }
+
+  renderContracts() {
+    this.contractList.innerHTML = '';
+    const locMap = {};
+    for (const loc of this.locations) locMap[loc.id] = loc.name;
+
+    for (const c of this.contracts) {
+      const locName = locMap[c.locationId] || 'UNKNOWN LOCATION';
+      const valid = locMap[c.locationId] ? 'good-contract' : 'bad-contract';
+      const div = document.createElement('div');
+      div.className = 'contract-card ' + valid;
+      div.innerHTML = `
+        <div class="contract-header">
+          <div class="contract-name">${c.name}</div>
+          <div class="contract-meta">${c.objective} · ${c.timeLimit || '∞'} min</div>
+        </div>
+        <div style="font-size:0.75rem;">Target: <span style="color:${valid === 'good-contract' ? '#a8ffb0' : '#ff7f7f'};">${locName}</span> [${c.locationId}]</div>
+        <div style="font-size:0.7rem;color:#888;">Failure: ${c.failureState}</div>
+        <button class="chip removable small" onclick="app.removeContract('${c.id}')" style="padding:0 6px;">Remove</button>
+      `;
+      this.contractList.appendChild(div);
+    }
+  }
+
+  validateContracts() {
+    const issues = [];
+    const locIds = new Set(this.locations.map(l => l.id));
+
+    for (const c of this.contracts) {
+      if (!locIds.has(c.locationId)) {
+        issues.push({
+          sev: 'error',
+          message: `Contract "${c.name}" targets location "${c.locationId}" which does not exist`,
+          code: c.locationId,
+        });
+      }
+      if (!c.failureState || c.failureState === '(none)') {
+        issues.push({
+          sev: 'warn',
+          message: `Contract "${c.name}" has no defined failure state`,
+          code: 'failureState',
+        });
+      }
+      if (c.timeLimit < 0) {
+        issues.push({
+          sev: 'error',
+          message: `Contract "${c.name}" has negative time limit`,
+          code: 'timeLimit',
+        });
+      }
+    }
+
+    const ok = issues.length === 0;
+    this.contractEmpty.style.display = 'none';
+    this.contractResult.style.display = 'block';
+    this.contractStatus.textContent = ok ? 'PASS — all contracts valid' : 'FAIL — issues found';
+    this.contractStatus.className = 'status ' + (ok ? 'ok' : 'bad');
+    this.contractCount.textContent = issues.length + ' issue' + (issues.length === 1 ? '' : 's');
+
+    this.contractIssues.innerHTML = '';
+    if (issues.length === 0) {
+      this.contractIssues.innerHTML = '<li style="color:#888; font-style:italic;">All contracts reference real locations and have sane parameters.</li>';
+      return;
+    }
+    for (const issue of issues) {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="sev ${issue.sev === 'error' ? 'error' : 'info'}">${issue.sev.toUpperCase()}</span>
+        <div style="flex:1;">${issue.message}</div>
+        ${issue.code ? `<span style="font-size:0.7rem;color:#f093fb;">${issue.code}</span>` : ''}
+      `;
+      this.contractIssues.appendChild(li);
+    }
+  }
+
+  exportJSON() {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      locations: this.locations,
+      contracts: this.contracts,
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meridian-contracts-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  clearAll() {
+    if (!confirm('Clear all locations and contracts?')) return;
+    this.locations = [];
+    this.contracts = [];
+    this.renderLocations();
+    this.renderContracts();
+    this.contractResult.style.display = 'none';
+    this.contractEmpty.style.display = 'block';
+  }
+}
+
+const app = new App();
+</script>
+</body>
+</html>

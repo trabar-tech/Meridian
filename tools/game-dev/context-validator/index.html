@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian · Context Validator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b0c10; color: #c5c6c7; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  header { background: #1f2833; border-bottom: 1px solid #3a3f4b; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 0.9rem; letter-spacing: 0.08em; color: #66fcf1; text-transform: uppercase; }
+  header .subtitle { font-size: 0.7rem; color: #888; }
+  main { flex: 1; display: flex; overflow: hidden; }
+  .panel { padding: 16px; overflow-y: auto; border-right: 1px solid #2a2f3a; display: flex; flex-direction: column; gap: 12px; }
+  .panel:first-child { flex: 0 0 420px; }
+  .panel:last-child { flex: 1; }
+  .panel h3 { color: #66fcf1; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #2a2f3a; padding-bottom: 6px; margin-bottom: 8px; }
+  label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
+  textarea { background: #0b0c10; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 10px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; resize: vertical; min-height: 140px; width: 100%; }
+  textarea:focus { outline: none; border-color: #66fcf1; }
+  button { background: #2a2f3a; border: 1px solid #4a5060; color: #c5c6c7; padding: 7px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+  button:hover { background: #3a3f4b; border-color: #66fcf1; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.primary:hover { background: #3a8bf5; }
+  button.secondary { background: transparent; color: #888; border-color: #4a5060; }
+  button.secondary:hover { color: #c5c6c7; border-color: #c5c6c7; }
+  button.danger { background: #6b2323; border-color: #6b2323; color: #ff7f7f; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tag { display: inline-block; background: #1f2833; border: 1px solid #3a3f4b; color: #c5c6c7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px 4px 2px 0; }
+  .tag.ok { border-color: #2d6a4f; color: #a8ffb0; }
+  .tag.bad { border-color: #6b2323; color: #ff7f7f; }
+  .tag.warn { border-color: #b8860b; color: #ffeaa7; }
+  .result { background: #14151a; border: 1px solid #2a2f3a; border-radius: 6px; padding: 12px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .status { font-weight: 700; font-size: 0.85rem; }
+  .status.ok { color: #a8ffb0; }
+  .status.bad { color: #ff7f7f; }
+  ul { list-style: none; }
+  li { padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.8rem; display: flex; gap: 8px; align-items: flex-start; }
+  li:last-child { border-bottom: none; }
+  .sev { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; min-width: 26px; text-align: center; }
+  .sev.error { background: #6b232333; color: #ff7f7f; border: 1px solid #6b232355; }
+  .sev.warn { background: #b8860b33; color: #ffeaa7; border: 1px solid #b8860b55; }
+  .sev.info { background: #1f6feb33; color: #9cc9ff; border: 1px solid #1f6feb55; }
+  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; color: #f093fb; background: #0b0c10; padding: 1px 4px; border-radius: 3px; }
+  .hint { font-size: 0.7rem; color: #666; font-style: italic; margin-top: 4px; }
+  .schema-chip { display: inline-block; background: #1f2833; border: 1px solid #3a3f4b; color: #888; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; margin: 2px; }
+  .empty { color: #666; font-size: 0.85rem; text-align: center; padding-top: 30px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Context Validator</h1>
+    <div class="subtitle">Checks map, NPC, and item JSON for dangling references and missing context tags</div>
+  </div>
+  <div style="margin-left:auto; font-size:0.7rem;color:#888;">Web-only · solo dev · zero build step</div>
+</header>
+
+<main>
+  <div class="panel">
+    <h3>1 · Paste your JSON</h3>
+    <textarea id="jsonInput" spellcheck="false" placeholder='Paste your level, NPC, or item JSON here. Example:
+
+{
+  "rooms": [
+    { "id": "r1", "name": "Maintenance Closet", "tags": ["maintenance", "small"], "locationTag": "[MAINTENANCE]" }
+  ],
+  "npcs": [
+    { "id": "n1", "name": "Crewmate A", "faction": "crew", "being": "human", "agenda": "repair", "currentRoom": "r1" }
+  ],
+  "dialogue": [
+    { "speaker": "n1", "line": "I saw them at [MAINTENANCE]!" }
+  ]
+}'></textarea>
+    <div class="row" style="margin-top:8px;">
+      <button class="primary" onclick="app.validate()">Validate</button>
+      <button class="secondary" onclick="app.loadExample()">Load example</button>
+      <button class="danger" onclick="app.clear()">Clear</button>
+    </div>
+    <div class="hint">Checks: every [LOCATION] bracket matches a room tag, every NPC references a real room, factions/beings/agendas come from allowed lists.</div>
+  </div>
+
+  <div class="panel">
+    <h3>2 · Results</h3>
+    <div id="resultBox" class="result" style="display:none;">
+      <div class="result-header">
+        <span id="statusText" class="status">—</span>
+        <span id="countText" style="font-size:0.7rem;color:#888;">— issues</span>
+      </div>
+      <ul id="issueList"></ul>
+    </div>
+    <div id="emptyState" class="empty">Paste JSON and click Validate to see results.</div>
+  </div>
+</main>
+
+<script>
+/**
+ * Meridian Context Validator
+ *
+ * For solo game devs working web-only. You paste your level/NPC/item JSON and
+ * it checks that every context reference actually exists:
+ *   - [LOCATION] brackets in dialogue match real room tags
+ *   - NPCs reference rooms that exist
+ *   - factions / beings / agendas come from allowed lists you define
+ *
+ * Output is a plain-text issue list you can fix before it becomes a bug in-game.
+ */
+
+class App {
+  constructor() {
+    this.input = document.getElementById('jsonInput');
+    this.resultBox = document.getElementById('resultBox');
+    this.emptyState = document.getElementById('emptyState');
+    this.statusText = document.getElementById('statusText');
+    this.countText = document.getElementById('countText');
+    this.issueList = document.getElementById('issueList');
+
+    // Allowed context lists — edit these to match your game's ontology
+    this.schema = {
+      factions: ['crew', 'rival', 'law', 'alien', 'unknown'],
+      beings: ['human', 'android', 'organism', 'animatronic', 'unknown'],
+      agendas: ['repair', 'observe', 'destroy', 'escape', 'hide', 'unknown'],
+      requiredRoomFields: ['id', 'name', 'tags', 'locationTag'],
+      requiredNpcFields: ['id', 'name', 'faction', 'being', 'agenda', 'currentRoom'],
+    };
+  }
+
+  loadExample() {
+    const example = {
+      rooms: [
+        { id: 'r1', name: 'Maintenance Closet', tags: ['maintenance', 'small'], locationTag: '[MAINTENANCE]' },
+        { id: 'r2', name: 'Security Office', tags: ['security', 'dark'], locationTag: '[SECURITY]' },
+        { id: 'r3', name: 'Pizzaria', tags: ['frontroom', 'public'], locationTag: '[PIZZARIA]' },
+      ],
+      npcs: [
+        { id: 'n1', name: 'Crewmate A', faction: 'crew', being: 'human', agenda: 'repair', currentRoom: 'r1' },
+        { id: 'n2', name: 'Merc B', faction: 'rival', being: 'human', agenda: 'destroy', currentRoom: 'r99' },
+        { id: 'n3', name: 'Thing C', faction: 'alien', being: 'organism', agenda: 'hide', currentRoom: 'r2' },
+      ],
+      dialogue: [
+        { speaker: 'n1', line: "I saw them at [MAINTENANCE]!" },
+        { speaker: 'n2', line: "The documents are in [VAULT]." },
+        { speaker: 'n3', line: "It hides in the dark." },
+      ],
+      items: [
+        { id: 'i1', name: 'Wrench', room: 'r1', tags: ['tool', 'maintenance'] },
+        { id: 'i2', name: 'Keycard', room: 'r99', tags: ['access'] },
+      ],
+    };
+    this.input.value = JSON.stringify(example, null, 2);
+  }
+
+  clear() {
+    this.input.value = '';
+    this.resultBox.style.display = 'none';
+    this.emptyState.style.display = 'block';
+  }
+
+  validate() {
+    const raw = this.input.value.trim();
+    if (!raw) {
+      this.showEmpty();
+      return;
+    }
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (err) {
+      this.showResult(false, [{ sev: 'error', message: `Invalid JSON: ${err.message}`, code: '' }]);
+      return;
+    }
+
+    const issues = [];
+
+    // Collect context anchors from the data
+    const rooms = data.rooms || [];
+    const npcs = data.npcs || [];
+    const items = data.items || [];
+    const dialogue = data.dialogue || [];
+
+    const roomIds = new Set(rooms.map(r => r.id));
+    const roomLocationTags = new Set(rooms.map(r => r.locationTag).filter(Boolean));
+    const npcIds = new Set(npcs.map(n => n.id));
+    const itemIds = new Set(items.map(i => i.id));
+
+    // 1. Room validation
+    for (const r of rooms) {
+      for (const field of this.schema.requiredRoomFields) {
+        if (r[field] === undefined || r[field] === null || r[field] === '') {
+          issues.push({ sev: 'error', message: `Room "${r.id || '(unnamed)'}" missing required field: ${field}`, code: field });
+        }
+      }
+      if (r.locationTag && !/^\[.+\]$/.test(r.locationTag)) {
+        issues.push({ sev: 'warn', message: `Room "${r.id}" locationTag should use [BRACKETS] format, got "${r.locationTag}"`, code: 'locationTag' });
+      }
+    }
+
+    // 2. NPC validation
+    for (const n of npcs) {
+      for (const field of this.schema.requiredNpcFields) {
+        if (n[field] === undefined || n[field] === null || n[field] === '') {
+          issues.push({ sev: 'error', message: `NPC "${n.id || '(unnamed)'}" missing required field: ${field}`, code: field });
+        }
+      }
+      if (n.faction && !this.schema.factions.includes(n.faction)) {
+        issues.push({ sev: 'warn', message: `NPC "${n.id}" faction "${n.faction}" not in allowed list: ${this.schema.factions.join(', ')}`, code: 'faction' });
+      }
+      if (n.being && !this.schema.beings.includes(n.being)) {
+        issues.push({ sev: 'warn', message: `NPC "${n.id}" being "${n.being}" not in allowed list: ${this.schema.beings.join(', ')}`, code: 'being' });
+      }
+      if (n.agenda && !this.schema.agendas.includes(n.agenda)) {
+        issues.push({ sev: 'warn', message: `NPC "${n.id}" agenda "${n.agenda}" not in allowed list: ${this.schema.agendas.join(', ')}`, code: 'agenda' });
+      }
+      if (n.currentRoom && !roomIds.has(n.currentRoom)) {
+        issues.push({ sev: 'error', message: `NPC "${n.id}" currentRoom "${n.currentRoom}" does not match any room id`, code: 'currentRoom' });
+      }
+    }
+
+    // 3. Item validation
+    for (const it of items) {
+      if (it.room && !roomIds.has(it.room)) {
+        issues.push({ sev: 'error', message: `Item "${it.id || '(unnamed)'}" placed in room "${it.room}" which does not exist`, code: 'room' });
+      }
+    }
+
+    // 4. Dialogue bracket validation — every [...] must match a known context tag
+    const bracketRegex = /\[([^\]]+)\]/g;
+    for (const d of dialogue) {
+      if (!d.speaker) {
+        issues.push({ sev: 'error', message: 'Dialogue entry missing speaker', code: 'speaker' });
+        continue;
+      }
+      if (!npcIds.has(d.speaker)) {
+        issues.push({ sev: 'error', message: `Dialogue speaker "${d.speaker}" is not a known NPC id`, code: 'speaker' });
+      }
+      if (d.line) {
+        let match;
+        while ((match = bracketRegex.exec(d.line)) !== null) {
+          const token = match[1];
+          const full = match[0];
+          if (!roomLocationTags.has(full)) {
+            issues.push({ sev: 'error', message: `Dialogue by "${d.speaker}" references ${full} but no room has that locationTag`, code: full, line: d.line });
+          }
+        }
+      }
+    }
+
+    const hasErrors = issues.some(i => i.sev === 'error');
+    this.showResult(!hasErrors, issues);
+  }
+
+  showResult(ok, issues) {
+    this.emptyState.style.display = 'none';
+    this.resultBox.style.display = 'block';
+    this.statusText.textContent = ok ? 'PASS — no issues found' : 'FAIL — issues found';
+    this.statusText.className = 'status ' + (ok ? 'ok' : 'bad');
+    this.countText.textContent = issues.length + ' issue' + (issues.length === 1 ? '' : 's');
+
+    this.issueList.innerHTML = '';
+    if (issues.length === 0) {
+      this.issueList.innerHTML = '<li style="color:#888; font-style:italic;">Everything checks out. Your context references are consistent.</li>';
+      return;
+    }
+    for (const issue of issues) {
+      const li = document.createElement('li');
+      const sevClass = issue.sev === 'error' ? 'error' : issue.sev === 'warn' ? 'warn' : 'info';
+      const codeHtml = issue.code ? `<span class="code">${issue.code}</span>` : '';
+      const lineHtml = issue.line ? `<br><span style="font-size:0.7rem;color:#666;">"${issue.line}"</span>` : '';
+      li.innerHTML = `
+        <span class="sev ${sevClass}">${issue.sev.toUpperCase()}</span>
+        <span>${issue.message}${lineHtml}</span>
+        ${codeHtml ? `<span style="margin-left:auto; font-size:0.7rem;color:#888;">${codeHtml}</span>` : ''}
+      `;
+      this.issueList.appendChild(li);
+    }
+  }
+
+  showEmpty() {
+    this.resultBox.style.display = 'none';
+    this.emptyState.style.display = 'block';
+  }
+}
+
+const app = new App();
+</script>
+</body>
+</html>
